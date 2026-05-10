@@ -1215,7 +1215,6 @@ function playNot(){try{const c=new(window.AudioContext||window.webkitAudioContex
 function notif(t){const d=document.createElement('div');d.className='not';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
 
 // PROFILE
-colPrev.addEventListener('input',()=>{colPrev.style.color=profColor.value});
 profColor.addEventListener('input',()=>{colPrev.style.color=profColor.value});
 
 avatarInput.addEventListener('change',function(){
@@ -1658,13 +1657,13 @@ function saveData(){
 }
 function saveDataThrottled(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(saveData,500)}
 function loadData(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null}catch(e){return null}}
-function clearSavedData(){localStorage.removeItem(SAVE_KEY);localStorage.removeItem('poins_remember');localStorage.removeItem('poins_pass')}
+function clearSavedData(){try{localStorage.removeItem(SAVE_KEY);localStorage.removeItem('poins_remember');localStorage.removeItem('poins_pass')}catch(e){}}
 // AUTO-LOGIN
-const savedUser=localStorage.getItem('poins_remember');
-const savedPass=localStorage.getItem('poins_pass');
+let savedUser=null,savedPass=null;
+try{savedUser=localStorage.getItem('poins_remember');savedPass=localStorage.getItem('poins_pass')}catch(e){}
 if(savedUser){$('loginName').value=savedUser;$('rmLogin').checked=true}
 if(savedUser&&savedPass){$('loginPass').value=savedPass;pendingMsg={type:'login',username:savedUser,password:savedPass};authErr.textContent='⏳ Автовход...'}
-if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();
+if('Notification'in window&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}
 updateMobileUI();
 
 connect();window.addEventListener('beforeunload',saveData);
