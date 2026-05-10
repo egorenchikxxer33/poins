@@ -94,23 +94,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .app{display:none;width:100%;height:100vh}.app.on{display:flex;flex-direction:column}
 
 /* HEADER */
-.hdr{display:flex;align-items:center;padding:0 16px;height:56px;background:rgba(11,14,23,.75);-webkit-backdrop-filter:blur(28px);backdrop-filter:blur(28px);border-bottom:1px solid rgba(29,107,240,.08);gap:10px;flex-shrink:0;z-index:10;box-shadow:0 1px 0 rgba(29,107,240,.05),0 4px 30px rgba(0,0,0,.15);position:relative}.hdr::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.03),transparent);transform:translateX(-100%);animation:hdrShine 6s ease-in-out infinite;pointer-events:none}@keyframes hdrShine{0%,100%{transform:translateX(-100%)}50%{transform:translateX(200%)}}
-.hdr .lg{font-size:17px;font-weight:700;display:flex;align-items:center;gap:7px}
-.hdr .lg .lg-i{background:var(--prim-grad);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:gradientShift 4s ease-in-out infinite}
-.hdr .badge{font-size:11px;color:var(--text2);padding:4px 12px;border-radius:20px;border:1px solid rgba(29,107,240,.08);white-space:nowrap;background:rgba(29,107,240,.06);box-shadow:0 0 20px rgba(29,107,240,.04)}
-.hdr .sp{flex:1}
-.mbtn{background:rgba(255,255,255,.04);border:none;color:var(--text2);width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:16px;transition:all .2s var(--ease);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mbtn:hover{background:rgba(255,255,255,.1);color:var(--text);transform:translateY(-1px)}
-.mbtn:active{transform:scale(.92)}
-
-.ut{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:12px;cursor:pointer;transition:all .2s var(--ease);border:none;background:rgba(255,255,255,.04);color:var(--text);font-family:inherit;font-size:inherit;position:relative}
-.ut:hover{background:rgba(255,255,255,.08);transform:translateY(-1px)}
-.ut:active{transform:scale(.97)}
-.ut .av{width:32px;height:32px;border-radius:50%;background:var(--prim-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3);overflow:hidden}
-.ut .av img{width:100%;height:100%;object-fit:cover}
-.ut .un{font-size:13px;font-weight:500;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ut .ar{font-size:8px;color:var(--text3);transition:transform .25s var(--ease);margin-left:2px}
-.ut.on .ar{transform:rotate(180deg)}
+.lbar{width:60px;background:linear-gradient(180deg,rgba(13,17,28,.98),rgba(8,11,20,.98));border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:10px 0 8px;flex-shrink:0;z-index:11;gap:2px}
+.lb-user{width:42px;height:42px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--prim-grad);background-size:200% 200%;color:#fff;font-weight:700;font-size:16px;transition:all .2s var(--ease);position:relative;overflow:hidden;margin-bottom:2px;animation:gradientShift 4s ease-in-out infinite;box-shadow:0 2px 8px rgba(0,0,0,.3);flex-shrink:0}
+.lb-user:hover{transform:scale(1.08);border-radius:14px;box-shadow:0 4px 16px var(--prim-g)}
+.lb-user:active{transform:scale(.93);border-radius:10px}
+.lb-av{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+.lb-av img{width:100%;height:100%;object-fit:cover}
+.lb-un{display:none}
+.lb-badge{position:absolute;bottom:-2px;right:-2px;background:var(--danger);color:#fff;font-size:8px;font-weight:700;padding:1px 4px;border-radius:8px;min-width:14px;text-align:center;border:2px solid var(--bg);box-shadow:0 2px 6px rgba(0,0,0,.4);line-height:1.2}
+.lb-div{width:28px;height:1px;background:var(--border);margin:6px 0 4px;flex-shrink:0}
+.lbb{width:42px;height:42px;border-radius:10px;border:none;background:transparent;color:var(--text3);font-size:18px;cursor:pointer;transition:all .2s var(--ease);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
+.lbb:hover{background:var(--surface);color:var(--text);transform:translateX(2px)}
+.lbb.on{background:var(--prim-l);color:var(--prim)}
+.lbb:active{transform:scale(.88)}
+.lb-sp{flex:1;min-height:4px}
 
 /* DROPDOWN */
 .dd{display:none;position:absolute;top:100%;right:0;margin-top:6px;background:rgba(15,20,32,.92);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border:1px solid rgba(29,107,240,.12);border-radius:var(--rl);padding:4px;min-width:200px;box-shadow:var(--shadow-l),0 0 60px rgba(29,107,240,.04);z-index:100;animation:sIn .2s var(--ease-o);transform-origin:top right}
@@ -332,14 +329,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 
 /* MOBILE */
 @media(max-width:768px){
-  .sb{position:fixed;top:56px;left:0;bottom:0;z-index:20;width:300px;transform:translateX(-100%);transition:transform .3s var(--ease);border-right-color:rgba(29,107,240,.12);box-shadow:4px 0 40px rgba(0,0,0,.3)}.sb.on{transform:translateX(0)}
+  .sb{position:fixed;top:0;left:0;bottom:0;z-index:20;width:300px;transform:translateX(-100%);transition:transform .3s var(--ease);border-right-color:rgba(29,107,240,.12);box-shadow:4px 0 40px rgba(0,0,0,.3)}.sb.on{transform:translateX(0)}
+  .lbar{width:100%;height:52px;flex-direction:row;padding:0 8px;border-right:none;border-bottom:1px solid var(--border);gap:0;position:relative;z-index:11}
+  .lb-user{width:36px;height:36px;border-radius:10px;font-size:14px;margin-bottom:0;flex-shrink:0}
+  .lb-div{width:1px;height:24px;margin:0 4px}
+  .lb-sp{display:none}
+  .lbb{width:38px;height:38px;border-radius:8px;font-size:16px;margin:0}
+  .lbb.on{background:var(--prim-l);color:var(--prim)}
+  .lb-badge{bottom:-2px;right:-2px;font-size:7px;padding:1px 3px;min-width:12px}
   .auth-c{padding:28px 18px 24px;width:94vw}.auth-logo .lg{font-size:32px}
   .tabs button{padding:9px 6px;font-size:12px}
   .frm input{padding:11px 12px;font-size:13px}
   .btn-p{padding:12px}.rm{font-size:11px}
-  .hdr{padding:0 10px;gap:6px}.hdr .lg{font-size:15px}
-  .mbtn{width:34px;height:34px;border-radius:8px;font-size:14px}
-  .ut{padding:3px 8px 3px 3px;gap:6px}.ut .av{width:28px;height:28px;font-size:12px}.ut .un{max-width:60px;font-size:12px}
   .chh{padding:0 10px;gap:8px}.chh .cn{font-size:13px}.chh .cs{font-size:10px}
   .msgs{padding:12px 10px 8px;gap:2px}
   .m{font-size:13px;padding:8px 12px;border-radius:12px}
@@ -350,7 +351,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
   .iw .ib{width:32px;height:32px;font-size:16px}
   .mc{padding:24px 16px}.mc h2{font-size:16px}.mb{padding:11px}
   .di{padding:8px 10px;font-size:12px}.dd{min-width:170px}
-  .ut .ar{display:none}
   .ci{padding:8px 10px;gap:8px}.ci .ca{width:40px;height:40px;font-size:15px}.ci .cn{font-size:13px}.ci .cp{font-size:11px}
   .ci .ca .dot,.ci .ca .dto{width:10px;height:10px}
   .ep{width:260px;max-height:180px;right:10px;gap:2px}.ep span{font-size:20px}
@@ -362,7 +362,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
   .cm{min-width:140px}.cmi{font-size:11px;padding:7px 10px}
   .st-row{padding:8px 10px;gap:8px}.st-icon{width:30px;height:30px;font-size:13px}.st-title{font-size:12px}
   .st-grid label{padding:6px 8px;min-width:50px;font-size:10px}
-  .cac .mbtn{width:32px;height:32px;font-size:13px}
   .call-o .call-av{width:72px;height:72px;font-size:30px}.call-o .call-name{font-size:20px}
   .call-o .call-btns button{width:48px;height:48px;font-size:18px}
   .call-o .call-vid-btns button{width:44px;height:44px;font-size:17px}
@@ -401,17 +400,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 
 <!-- APP -->
 <div class="app" id="app">
-  <div class="hdr">
-    <button class="mbtn" id="menuBtn" style="display:none">☰</button>
-    <div class="lg"><span class="lg-i">◈</span> Poins</div>
-    <span class="badge" id="onlineBadge">0</span>
-    <div class="sp"></div>
-    <div style="position:relative">
-      <button class="ut" id="userTrig">
-        <span class="av" id="hdrAv">?</span>
-        <span class="un" id="hdrUser"></span>
-        <span class="ar">▼</span>
-      </button>
+<div class="sbo" id="sbo"></div>
+  <div class="bd">
+    <div class="lbar" id="lbar">
+      <div class="lb-user" id="userTrig">
+        <span class="lb-av" id="hdrAv">?</span>
+        <span class="lb-un" id="hdrUser"></span>
+        <span class="lb-badge" id="onlineBadge">0</span>
+      </div>
+      <div class="lb-div"></div>
+      <button class="lbb on" data-t="chats" title="Чаты">💬</button>
+      <button class="lbb" data-t="contacts" title="Контакты">👥</button>
+      <div class="lb-sp"></div>
+      <button class="lbb" onclick="oModal('settingsModal')" title="Настройки">⚙️</button>
+      <button class="lbb" onclick="logout()" title="Выйти">🚪</button>
       <div class="dd" id="userMenu">
         <button class="di" data-a="profile"><span class="ic">👤</span> Профиль</button>
         <button class="di" data-a="settings"><span class="ic">⚙️</span> Настройки</button>
@@ -421,10 +423,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
         <button class="di" data-a="logout"><span class="ic">🚪</span> Выйти</button>
       </div>
     </div>
-  </div>
-
-  <div class="sbo" id="sbo"></div>
-  <div class="bd">
     <aside class="sb" id="sb">
       <div class="sbh">
         <div class="srch">
@@ -674,7 +672,7 @@ const cl=$('cl'),onlineBadge=$('onlineBadge'),hdrUser=$('hdrUser'),hdrAv=$('hdrA
 const chName=$('chName'),chStatus=$('chStatus'),chAv=$('chAv'),chActions=$('chActions');
 const typ=$('typ'),scb=$('scb'),srch=$('srch'),scl=$('scl');
 const emojib=$('emojib'),ep=$('ep'),authErr=$('authErr'),authConn=$('authConn');
-const menuBtn=$('menuBtn'),sb=$('sb'),sbo=$('sbo'),bb=$('bb');
+const sb=$('sb'),sbo=$('sbo'),bb=$('bb');
 const profName=$('profName'),profBio=$('profBio'),profColor=$('profColor'),colPrev=$('colPrev'),profAvatarText=$('profAvatarText'),profAvatarWrap=$('profAvatarWrap'),avatarInput=$('avatarInput');
 const newChatName=$('newChatName'),newChatResult=$('newChatResult'),newChatUsers=$('newChatUsers');
 const groupName=$('groupName'),groupUsers=$('groupUsers'),groupResult=$('groupResult');
@@ -1478,13 +1476,10 @@ window.addEventListener('focus',()=>{pageFocused=true;unread._t=0;document.title
 window.addEventListener('blur',()=>{pageFocused=false});
 
 // MOBILE
-menuBtn.addEventListener('click',()=>{sb.classList.toggle('on');sbo.classList.toggle('on')});
 sbo.addEventListener('click',()=>{sb.classList.remove('on');sbo.classList.remove('on')});
 bb.addEventListener('click',()=>{if(window.innerWidth<=768){sb.classList.add('on');sbo.classList.add('on');bb.classList.remove('sh')}});
 function closeSb(){sb.classList.remove('on');sbo.classList.remove('on')}
-function upOnline(){onlineBadge.textContent=allUsers.filter(u=>u.online).length+' онлайн'}
-function updateMobileUI(){const m=window.innerWidth<=768;menuBtn.style.display=m?'':'none';if(!m){sb.classList.remove('on');sbo.classList.remove('on');bb.classList.remove('sh')}}
-window.addEventListener('resize',updateMobileUI);
+function upOnline(){onlineBadge.textContent=allUsers.filter(u=>u.online).length}
 // ============ CALLS ============
 function callUser(target,video){
   if(callState)return;
