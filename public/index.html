@@ -328,6 +328,48 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .ua:hover .ua-over{opacity:1}
 .un{font-size:18px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px}
 .us{font-size:11px;color:var(--text3);margin-top:2px}
+.sbo{display:none;position:fixed;inset:0;z-index:15;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:fIn .2s}.sbo.on{display:block}
+
+/* MOBILE */
+@media(max-width:768px){
+  .sb{position:fixed;top:56px;left:0;bottom:0;z-index:20;width:300px;transform:translateX(-100%);transition:transform .3s var(--ease);border-right-color:rgba(29,107,240,.12);box-shadow:4px 0 40px rgba(0,0,0,.3)}.sb.on{transform:translateX(0)}
+  .auth-c{padding:28px 18px 24px;width:94vw}.auth-logo .lg{font-size:32px}
+  .tabs button{padding:9px 6px;font-size:12px}
+  .frm input{padding:11px 12px;font-size:13px}
+  .btn-p{padding:12px}.rm{font-size:11px}
+  .hdr{padding:0 10px;gap:6px}.hdr .lg{font-size:15px}
+  .mbtn{width:34px;height:34px;border-radius:8px;font-size:14px}
+  .ut{padding:3px 8px 3px 3px;gap:6px}.ut .av{width:28px;height:28px;font-size:12px}.ut .un{max-width:60px;font-size:12px}
+  .chh{padding:0 10px;gap:8px}.chh .cn{font-size:13px}.chh .cs{font-size:10px}
+  .msgs{padding:12px 10px 8px;gap:2px}
+  .m{font-size:13px;padding:8px 12px;border-radius:12px}
+  .mw{max-width:88%;margin-bottom:6px;gap:6px}
+  .mw .m-av{width:28px;height:28px;font-size:11px}
+  .in{padding:6px 10px 10px;gap:6px}.iw{border-radius:12px;padding:3px}.iw textarea{font-size:13px;padding:5px 6px}
+  .snd{width:40px;height:40px;font-size:16px}
+  .iw .ib{width:32px;height:32px;font-size:16px}
+  .mc{padding:24px 16px}.mc h2{font-size:16px}.mb{padding:11px}
+  .di{padding:8px 10px;font-size:12px}.dd{min-width:170px}
+  .ut .ar{display:none}
+  .ci{padding:8px 10px;gap:8px}.ci .ca{width:40px;height:40px;font-size:15px}.ci .cn{font-size:13px}.ci .cp{font-size:11px}
+  .ci .ca .dot,.ci .ca .dto{width:10px;height:10px}
+  .ep{width:260px;max-height:180px;right:10px;gap:2px}.ep span{font-size:20px}
+  .not{padding:8px 16px;font-size:12px;bottom:10px;width:90vw;text-align:center}
+  .cl{padding:2px 0}
+  .sbtn{padding:6px 10px 8px;gap:4px}.sbt{padding:6px 0;font-size:11px}
+  .srch{padding:0 8px}.srch input{padding:7px 0;font-size:12px}
+  .sbh{padding:8px 10px}
+  .cm{min-width:140px}.cmi{font-size:11px;padding:7px 10px}
+  .st-row{padding:8px 10px;gap:8px}.st-icon{width:30px;height:30px;font-size:13px}.st-title{font-size:12px}
+  .st-grid label{padding:6px 8px;min-width:50px;font-size:10px}
+  .cac .mbtn{width:32px;height:32px;font-size:13px}
+  .call-o .call-av{width:72px;height:72px;font-size:30px}.call-o .call-name{font-size:20px}
+  .call-o .call-btns button{width:48px;height:48px;font-size:18px}
+  .call-o .call-vid-btns button{width:44px;height:44px;font-size:17px}
+  #callLocalVideo{width:120px;height:90px;bottom:80px;right:10px}
+  .emojib{font-size:20px}.typ{font-size:10px;padding:2px 10px 4px}
+  .dsep{padding:8px 0 4px}.dsep span{padding:3px 12px;font-size:9px}
+}
 </style>
 </head>
 <body>
@@ -620,6 +662,7 @@ const EMOJIS=['😀','😃','😄','😁','😅','😂','🤣','😊','😇','�
 let ws,userName,allUsers=[],convs=[],currentConv,currentType,isGroup=false,myProfile=null,isPremium=false,premUntil=null,myStickers=[];
 let lastDate='',midC=0,pageFocused=true,unread={};
 let typing={},typingT,replyTo=null,forwardMsg=null;
+let msgCache={},saveTimer=null,savedPass='';
 
 // Call state
 let callState=null;
@@ -694,18 +737,20 @@ function connect(){
   authErr.textContent='✅ Зарегистрировано! Войдите.';
   document.querySelectorAll('.tab')[0].click();
   const rn=$('regName').value.trim();
-  if($('rmReg').checked)localStorage.setItem('poins_remember',rn);else localStorage.removeItem('poins_remember');
+  if($('rmReg').checked){localStorage.setItem('poins_remember',rn);localStorage.setItem('poins_pass',$('regPass').value)}else{localStorage.removeItem('poins_remember');localStorage.removeItem('poins_pass')}
   $('loginName').value=rn;
   break;
       case 'login_ok':
         userName=d.user;allUsers=d.users||[];myProfile=d.profile;
         isPremium=!!(d.profile&&d.profile.premium);premUntil=d.profile&&d.profile.premiumUntil;
-        if($('rmLogin').checked)localStorage.setItem('poins_remember',userName);else localStorage.removeItem('poins_remember');
+        if($('rmLogin').checked){localStorage.setItem('poins_remember',userName);localStorage.setItem('poins_pass',$('loginPass').value)}else{localStorage.removeItem('poins_remember');localStorage.removeItem('poins_pass')}
         auth.style.display='none';app.classList.add('on');
         hdrUser.textContent=userName;updateHdrAv();
         upOnline();reqUsers();reqConvs();renderTab('chats');
         applyTheme(myProfile&&myProfile.theme);
         applyChatBg(myProfile&&myProfile.bgImage);
+        // Restore cached messages for instant display
+        const _cached=loadData();if(_cached&&_cached.user===userName&&_cached.currentConv&&_cached.msgs&&_cached.msgs[_cached.currentConv]){setTimeout(()=>{msgCache=_cached.msgs||{};currentConv=_cached.currentConv;currentType=_cached.currentType;isGroup=_cached.isGroup;const cm=_cached.msgs[_cached.currentConv];if(cm&&cm.length){clearMsgs();cm.forEach(m=>{if(m.system)addSys(m.text);else addMsg(m.author,m.text,m.type,m.time,m.id)})}wsSend({type:'get_messages',convId:_cached.currentConv})},150)}
         break;
       case 'error':
         authErr.textContent=d.message;
@@ -716,10 +761,10 @@ function connect(){
       case 'users_list':allUsers=d.users;renderContacts();break;
       case 'profile_updated':
         if(d.name===userName){myProfile=d.profile;isPremium=!!(d.profile&&d.profile.premium);applyTheme(d.profile&&d.profile.theme);applyChatBg(d.profile&&d.profile.bgImage)}
-        updateHdrAv();reqUsers();
+        updateHdrAv();reqUsers();saveDataThrottled();
         break;
 
-      case 'convs_list':convs=d.conversations||[];renderChats();break;
+      case 'convs_list':convs=d.conversations||[];renderChats();saveDataThrottled();break;
       case 'dm_created':
         if(d.conversation){const e=convs.find(c=>c.id===d.conversation.id);if(!e){convs.push(d.conversation);renderChats()}switchConv(d.conversation.id);cModal('newChatModal')}
         break;
@@ -731,7 +776,7 @@ function connect(){
         break;
 
       case 'msgs_list':
-        if(d.convId===currentConv){const ms=d.messages||[];clearMsgs();ms.forEach(m=>addMsg(m.from,m.text,m.from===userName?'me':'ot',m.time,m.id,m.system))}
+        if(d.convId===currentConv){const ms=d.messages||[];msgCache[currentConv]=[];clearMsgs();ms.forEach(m=>addMsg(m.from,m.text,m.from===userName?'me':'ot',m.time,m.id,m.system));saveDataThrottled()}
         break;
       case 'new_msg':
         const m=d.message;
@@ -749,11 +794,12 @@ function connect(){
           const c=convs.find(x=>x.id===m.convId);
           if(c){c.last={text:lastText,from:m.from,time:m.time};if(currentConv!==m.convId)unread[m.convId]=(unread[m.convId]||0)+1;renderChats()}
           if(m.from!==userName&&(!pageFocused||currentConv!==m.convId))playNot();
+          saveDataThrottled()
         }
         break;
 
-      case 'user_online':allUsers=d.users||[];upOnline();reqUsers();break;
-      case 'user_offline':allUsers=d.users||[];upOnline();reqUsers();break;
+case 'user_online':allUsers=d.users||[];upOnline();reqUsers();saveDataThrottled();break;
+      case 'user_offline':allUsers=d.users||[];upOnline();reqUsers();saveDataThrottled();break;
       case 'typing':if(d.name!==userName&&(!d.convId||d.convId===currentConv))showTyp(d.name);break;
       case 'reaction':if(d.name!==userName)addR(d.msgId,d.reaction);break;
       case 'msg_edited':if(d.convId===currentConv){const el=document.getElementById(d.msgId);if(el){const m=el.querySelector('.m');if(m){m.innerHTML=procText(d.text)+(d.text.includes('edited')?' <span style="font-size:8px;opacity:.5">(ред.)</span>':'')}}};break;
@@ -894,7 +940,7 @@ function switchConv(id){
   bb.classList.toggle('sh',window.innerWidth<=768);
   renderChats();closeSb();
   if(c&&c.pinned)showPinBanner(c.pinned);else hidePinBanner();
-  wsSend({type:'get_messages',convId:id});
+  wsSend({type:'get_messages',convId:id});saveDataThrottled();
 }
 
 function switchGroup(id){
@@ -908,7 +954,7 @@ function switchGroup(id){
   bb.classList.toggle('sh',window.innerWidth<=768);
   renderChats();closeSb();
   if(c&&c.pinned)showPinBanner(c.pinned);else hidePinBanner();
-  wsSend({type:'get_messages',convId:id});
+  wsSend({type:'get_messages',convId:id});saveDataThrottled();
 }
 
 function switchToConv(id,type,isNew){
@@ -1001,7 +1047,7 @@ function addMsg(author,text,type,time,id,system){
   in2+='<div class="m'+(type==='ot'&&avHtml?' m-with-av':'')+'">';
   if(text&&text[0]==='{'&&text.includes('"replyTo"')){try{const rp=JSON.parse(text);if(rp.replyTo){in2+='<div class="rpv" onclick="scrollToMsg(\''+rp.replyTo+'\')">↩ '+esc(rp.replyAuthor||'')+': '+esc((rp.replyText||'').slice(0,30))+'</div>';text=rp.text}}catch{}}
   if(type==='ot'||isGroup)in2+='<div class="author" style="color:'+(nc||(type==='ot'?'var(--prim)':''))+'">'+es+esc(author)+prem+'</div>';
-  if(text&&text.startsWith('[poll]')){try{const poll=JSON.parse(text.slice(6));in2+=renderPoll(poll,mid);in2+='<div class="time">'+fT(time)+'</div></div>';w.innerHTML=in2;msgs.appendChild(w);scrollD();scbC();return}catch{}}
+  if(text&&text.startsWith('[poll]')){try{const poll=JSON.parse(text.slice(6));in2+=renderPoll(poll,mid);in2+='<div class="time">'+fT(time)+'</div></div>';w.innerHTML=in2;msgs.appendChild(w);if(currentConv){if(!msgCache[currentConv])msgCache[currentConv]=[];msgCache[currentConv].push({author,text:'📊 Опрос',type,time,id:mid,system:false})}scrollD();scbC();return}catch{}}
   in2+=(text&&text.startsWith('[sticker]')?'<img src="'+esc(text.slice(9))+'" style="max-width:160px;max-height:160px;border-radius:8px;display:block">':procText(text))+'<div class="time">'+fT(time)+(text&&text.includes('edited')?' <span style="font-size:8px;opacity:.5">(ред.)</span>':'')+'</div><div class="rr" id="r_'+mid+'"></div></div>';
   const baseR=['👍','❤️','😂','😮','😢','🔥','🎉','💀'];
   const premR=['👍','❤️','😂','😮','😢','🔥','🎉','💀','🥳','🤩','😍','👑','💪','🫶','🌟','💯'];
@@ -1012,6 +1058,7 @@ function addMsg(author,text,type,time,id,system){
   msgs.appendChild(w);
   w.querySelector('.rp').addEventListener('click',e=>{const r=e.target.dataset.r;if(!r)return;wsSend({type:'reaction',msgId:mid,reaction:r,convId:currentConv})});
   if(type==='ot'&&!pageFocused){unread._t=(unread._t||0)+1;document.title=unread._t?'('+unread._t+') Poins':'Poins'}
+  if(currentConv){if(!msgCache[currentConv])msgCache[currentConv]=[];const ct=text.startsWith('[sticker]')?'[Стикер]':text;msgCache[currentConv].push({author,text:ct,type,time,id:mid,system:false});if(msgCache[currentConv].length>200)msgCache[currentConv]=msgCache[currentConv].slice(-200)}
   scrollD();scbC();
 }
 function renderPoll(poll,mid){
@@ -1342,7 +1389,7 @@ userMenu.addEventListener('click',e=>{
 });
 document.addEventListener('click',e=>{if(!e.target.closest('.dd')&&!userTrig.contains(e.target)){userMenu.classList.remove('on');userTrig.classList.remove('on')}});
 
-function logout(){if(ws)ws.close();if(localStream)stopAllTracks();app.classList.remove('on');auth.style.display='flex';userName='';currentConv=null;convs=[];isPremium=false;myStickers=[];myProfile=null;clearMsgs();editingMsg=null;replyTo=null;forwardMsg=null;}
+function logout(){if(ws)ws.close();if(localStream)stopAllTracks();app.classList.remove('on');auth.style.display='flex';userName='';currentConv=null;convs=[];isPremium=false;myStickers=[];myProfile=null;clearMsgs();editingMsg=null;replyTo=null;forwardMsg=null;msgCache={};clearSavedData();}
 
 // CONTEXT MENU
 const cm=$('cm');
@@ -1594,13 +1641,33 @@ function toggleScreenShare(){
   }).catch(()=>{});
 }
 
-// INIT
+// DATA PERSISTENCE
+const SAVE_KEY='poins_data';
+function saveData(){
+  if(!userName)return;
+  try{
+    const data={user:userName,profile:myProfile,users:allUsers,convs:convs,unread:unread,currentConv:currentConv,currentType:currentType,isGroup:isGroup,msgs:{}};
+    let cnt=0;
+    for(const c of convs){
+      if(cnt>=10)break;
+      const ms=msgCache[c.id];
+      if(ms&&ms.length){data.msgs[c.id]=ms.slice(-200);cnt++}
+    }
+    localStorage.setItem(SAVE_KEY,JSON.stringify(data));
+  }catch(e){}
+}
+function saveDataThrottled(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(saveData,500)}
+function loadData(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null}catch(e){return null}}
+function clearSavedData(){localStorage.removeItem(SAVE_KEY);localStorage.removeItem('poins_remember');localStorage.removeItem('poins_pass')}
+// AUTO-LOGIN
 const savedUser=localStorage.getItem('poins_remember');
+const savedPass=localStorage.getItem('poins_pass');
 if(savedUser){$('loginName').value=savedUser;$('rmLogin').checked=true}
+if(savedUser&&savedPass){pendingMsg={type:'login',username:savedUser,password:savedPass};authErr.textContent='⏳ Автовход...'}
 if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();
 updateMobileUI();
 
-connect();
+connect();window.addEventListener('beforeunload',saveData);
 </script>
 </body>
 </html>
