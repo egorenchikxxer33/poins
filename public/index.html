@@ -494,6 +494,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
     <button class="cb-mid" id="cvScr" onclick="toggleScreenShare()">🖥️</button>
     <button class="cb-end-v" onclick="endCall()">📞</button>
   </div>
+  <div id="groupCallParticipants" style="display:none;position:absolute;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(15,20,32,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-radius:var(--rl);padding:12px 16px;border:1px solid rgba(29,107,240,.12);min-width:200px;text-align:center;z-index:6;box-shadow:var(--shadow-l)">
+    <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:500">Участники звонка</div>
+    <div id="gcParticipantList" style="display:flex;flex-direction:column;gap:4px"></div>
+  </div>
 </div>
 
 <!-- MODAL: Profile -->
@@ -668,6 +672,12 @@ let msgCache={},saveTimer=null,savedPass='';
 let callState=null;
 let callTarget=null,isVideoCall=false,callMuted=false,callSpeaker=false,callStartTime=null;
 let pc=null,localStream=null,camStream=null,screenStream=null;
+
+// Group call state
+let groupCallState='idle'; // 'idle','starting','joined'
+let groupCallConvId=null;
+let groupCallPeers={};
+let groupCallParticipants=[];
 
 const auth=$('auth'),app=$('app'),msgs=$('msgs'),msgIn=$('msgIn'),snd=$('snd');
 const cl=$('cl'),onlineBadge=$('onlineBadge'),hdrUser=$('hdrUser'),hdrAv=$('hdrAv');
@@ -852,13 +862,52 @@ case 'user_online':allUsers=d.users||[];upOnline();reqUsers();saveDataThrottled(
       case 'call_ended':
         notif('Вызов завершён');closeCallOverlay();
         break;
+      // ============ GROUP CALLS ============
+      case 'group_call_started':
+        if(groupCallState!=='idle')break;
+        if(callState){notif('📞 Входящий групповой звонок от '+d.from);break}
+        groupCallConvId=d.convId;groupCallParticipants=d.participants||[d.from];
+        showGCOverlay();
+        break;
+      case 'group_call_joined':
+        if(!groupCallConvId||d.convId!==groupCallConvId)break;
+        if(d.participants)groupCallParticipants=d.participants;
+        if(!groupCallParticipants.includes(d.from))groupCallParticipants.push(d.from);
+        updateGCParticipants();
+        if(d.from===userName){
+          // Our own join confirmation — existing participants will send us offers
+          if(groupCallState==='starting'){groupCallState='joined';callStateEl.textContent='В звонке'}
+        }else{
+          // Someone else joined — we initiate the connection to them (send offer)
+          if(groupCallState==='joined'||groupCallState==='starting'){
+            if(groupCallState==='starting'){groupCallState='joined';callStateEl.textContent='В звонке'}
+            if(groupCallLocalStream)setupGroupPeer(d.from);
+          }
+        }
+        break;
+      case 'group_call_left':
+        if(!groupCallConvId||d.convId!==groupCallConvId)break;
+        groupCallParticipants=groupCallParticipants.filter(n=>n!==d.from);
+        updateGCParticipants();
+        if(groupCallPeers[d.from]){try{groupCallPeers[d.from].close()}catch(e){};delete groupCallPeers[d.from]}
+        if(groupCallParticipants.length<=1){notif('👋 Все вышли из звонка');endGroupCall()}
+        break;
+      case 'group_call_ended':
+        if(!groupCallConvId||d.convId!==groupCallConvId)break;
+        notif('📞 Групповой звонок завершён');
+        if(groupCallState!=='idle'){for(const n in groupCallPeers){try{groupCallPeers[n].close()}catch(e){}}groupCallPeers={};if(groupCallLocalStream){groupCallLocalStream.getTracks().forEach(t=>t.stop());groupCallLocalStream=null}groupCallState='idle';groupCallParticipants=[];groupCallConvId=null}
+        closeGroupCallOverlay();
+        break;
       case 'offer':
+        if(d.convId){handleGroupOffer(d.from,d.data);break}
         if(pc&&callState==='active'){pc.setRemoteDescription(new RTCSessionDescription(d.data)).catch(()=>{});pc.createAnswer().then(a=>{pc.setLocalDescription(a);wsSend({type:'answer',target:d.from,data:a})}).catch(()=>{})}
         break;
       case 'answer':
+        if(d.convId){handleGroupAnswer(d.from,d.data);break}
         if(pc&&callState==='active'){pc.setRemoteDescription(new RTCSessionDescription(d.data)).catch(()=>{})}
         break;
       case 'ice_candidate':
+        if(d.convId){handleGroupIce(d.from,d.data);break}
         if(pc&&callState==='active'){pc.addIceCandidate(new RTCIceCandidate(d.data)).catch(()=>{})}
         break;
     }
@@ -936,7 +985,7 @@ function switchConv(id){
   chName.innerHTML=esc(o)+prem+emoji;updateChAv(o,u&&u.avatar);
   chStatus.textContent=u&&u.online?'● В сети':'○ Не в сети';
   chStatus.style.color=u&&u.online?'var(--ok)':'var(--text3)';
-  chActions.style.display='flex';callBtn.onclick=()=>callUser(o,false);videoBtn.onclick=()=>callUser(o,true);
+  chActions.style.display='flex';callBtn.onclick=()=>callUser(o,false);callBtn.textContent='📞';callBtn.title='Позвонить';videoBtn.onclick=()=>callUser(o,true);videoBtn.style.display='';
   bb.classList.toggle('sh',window.innerWidth<=768);
   renderChats();closeSb();
   if(c&&c.pinned)showPinBanner(c.pinned);else hidePinBanner();
@@ -950,7 +999,11 @@ function switchGroup(id){
   chName.textContent=c.name;chAv.textContent='👥';
   chStatus.textContent=c.members.length+' участников';
   chStatus.style.color='var(--text3)';
-  chActions.style.display='none';
+  chActions.style.display='flex';
+  callBtn.onclick=()=>startGroupCall(id);
+  callBtn.textContent='👥';
+  callBtn.title='Групповой звонок';
+  videoBtn.style.display='none';
   bb.classList.toggle('sh',window.innerWidth<=768);
   renderChats();closeSb();
   if(c&&c.pinned)showPinBanner(c.pinned);else hidePinBanner();
@@ -1389,7 +1442,9 @@ userMenu.addEventListener('click',e=>{
 });
 document.addEventListener('click',e=>{if(!e.target.closest('.dd')&&!userTrig.contains(e.target)){userMenu.classList.remove('on');userTrig.classList.remove('on')}});
 
-function logout(){if(ws)ws.close();if(localStream)stopAllTracks();app.classList.remove('on');auth.style.display='flex';userName='';currentConv=null;convs=[];isPremium=false;myStickers=[];myProfile=null;clearMsgs();editingMsg=null;replyTo=null;forwardMsg=null;msgCache={};clearSavedData();}
+function logout(){
+  if(groupCallState!=='idle'){for(const n in groupCallPeers){try{groupCallPeers[n].close()}catch(e){}}groupCallPeers={};if(groupCallLocalStream){groupCallLocalStream.getTracks().forEach(t=>t.stop());groupCallLocalStream=null}groupCallState='idle';groupCallParticipants=[];groupCallConvId=null}
+  if(ws)ws.close();if(localStream)stopAllTracks();app.classList.remove('on');auth.style.display='flex';userName='';currentConv=null;convs=[];isPremium=false;myStickers=[];myProfile=null;clearMsgs();editingMsg=null;replyTo=null;forwardMsg=null;msgCache={};clearSavedData();}
 
 // CONTEXT MENU
 const cm=$('cm');
@@ -1566,6 +1621,14 @@ function closeCallOverlay(){
   callState=null;callTarget=null;
   stopAllTracks();
   if(pc){pc.close();pc=null}
+  // Clean up group call state too if lingering
+  if(groupCallState!=='idle'){
+    for(const n in groupCallPeers){try{groupCallPeers[n].close()}catch(e){}}
+    groupCallPeers={};
+    if(groupCallLocalStream){groupCallLocalStream.getTracks().forEach(t=>t.stop());groupCallLocalStream=null}
+    groupCallState='idle';groupCallParticipants=[];groupCallConvId=null;
+  }
+  const pDiv=$('groupCallParticipants');if(pDiv)pDiv.style.display='none';
   callBtns.innerHTML='<button class="cb-mid" id="callMuteBtn" onclick="toggleCallMute()">🎤</button><button class="cb-end" id="callEndBtn" onclick="endCall()">📞</button><button class="cb-mid" id="callSpeakerBtn" onclick="toggleSpeaker()">🔊</button>';
 }
 
@@ -1573,6 +1636,7 @@ function stopAllTracks(){
   if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null}
   if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
   if(screenStream){screenStream.getTracks().forEach(t=>t.stop());screenStream=null}
+  if(groupCallLocalStream){groupCallLocalStream.getTracks().forEach(t=>t.stop());groupCallLocalStream=null}
   callLocalVideo.srcObject=null;callLocalVideo.style.display='none';
   callVideo.srcObject=null;callVideo.style.display='none';
 }
@@ -1639,6 +1703,123 @@ function toggleScreenShare(){
     cvScr.className='cb-mid on';
     s.getVideoTracks()[0].onended=()=>{screenStream=null;cvScr.className='cb-mid'};
   }).catch(()=>{});
+}
+
+// ============ GROUP CALLS ============
+function startGroupCall(convId){
+  if(groupCallState!=='idle')return;
+  if(callState){notif('⚠️ Сначала завершите текущий звонок');return}
+  groupCallConvId=convId;groupCallState='starting';
+  groupCallPeers={};groupCallParticipants=[userName];
+  callOverlay.className='call-o on';callAv.innerHTML='👥';
+  callName.textContent='Групповой звонок';callStateEl.textContent='Начинаем...';
+  callBtns.style.display='flex';callVidBtns.style.display='none';
+  callVideo.style.display='none';callLocalVideo.style.display='none';
+  document.querySelectorAll('.call-av')[0].style.display='flex';
+  callBtns.innerHTML='<button class="cb-mid" onclick="toggleCallMute()">🎤</button><button class="cb-end" onclick="endGroupCall()">📞</button>';
+  const pDiv=$('groupCallParticipants');
+  if(pDiv)pDiv.style.display='block';
+  updateGCParticipants();
+  // Get stream then signal
+  navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{
+    groupCallLocalStream=s;wsSend({type:'start_group_call',convId});
+  }).catch(()=>{
+    notif('⚠️ Нет доступа к микрофону');
+    wsSend({type:'start_group_call',convId});
+  });
+}
+function showGCOverlay(){
+  callOverlay.className='call-o on';callAv.innerHTML='👥';
+  callName.textContent='Групповой звонок';callStateEl.textContent='Входящий...';
+  callBtns.style.display='flex';callVidBtns.style.display='none';
+  callVideo.style.display='none';callLocalVideo.style.display='none';
+  document.querySelectorAll('.call-av')[0].style.display='flex';
+  callBtns.innerHTML='<button class="cb-end" onclick="rejectGroupCall()">📞</button><button class="cb-acc" onclick="acceptGroupCall()">📞</button>';
+  const pDiv=$('groupCallParticipants');
+  if(pDiv)pDiv.style.display='block';
+  updateGCParticipants();
+}
+function acceptGroupCall(){
+  if(!groupCallConvId)return;
+  groupCallState='joined';groupCallPeers={};
+  if(!groupCallParticipants.includes(userName))groupCallParticipants.unshift(userName);
+  callBtns.innerHTML='<button class="cb-mid" onclick="toggleCallMute()">🎤</button><button class="cb-end" onclick="endGroupCall()">📞</button>';
+  callStateEl.textContent='В звонке';
+  updateGCParticipants();
+  navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{
+    groupCallLocalStream=s;
+    wsSend({type:'join_group_call',convId:groupCallConvId});
+  }).catch(()=>{
+    notif('⚠️ Нет доступа к микрофону');
+    wsSend({type:'join_group_call',convId:groupCallConvId});
+  });
+}
+function rejectGroupCall(){
+  groupCallState='idle';groupCallParticipants=[];
+  groupCallConvId=null;closeGroupCallOverlay();
+}
+function updateGCParticipants(){
+  const el=$('gcParticipantList');if(!el)return;
+  el.innerHTML=groupCallParticipants.map(n=>{
+    const isMe=n===userName;
+    return '<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.04);font-size:12px"><span style="width:24px;height:24px;border-radius:50%;background:var(--prim-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;flex-shrink:0">'+(n[0]||'?').toUpperCase()+'</span><span style="flex:1;text-align:left">'+esc(n)+(isMe?' <span style="color:var(--text3);font-size:10px">(вы)</span>':'')+'</span><span style="font-size:8px;color:var(--ok)">●</span></div>'
+  }).join('');
+}
+function setupGroupPeer(target){
+  if(groupCallPeers[target])return;
+  const peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+  groupCallPeers[target]=peer;
+  const tgt=target;
+  peer.onicecandidate=e=>{if(e.candidate&&ws&&ws.readyState===1)wsSend({type:'ice_candidate',convId:groupCallConvId,target:tgt,data:e.candidate})};
+  peer.ontrack=e=>{
+    if(e.streams[0]){callVideo.srcObject=e.streams[0];callVideo.style.display='block';document.querySelectorAll('.call-av')[0].style.display='none'}
+  };
+  if(groupCallLocalStream)groupCallLocalStream.getTracks().forEach(t=>{try{peer.addTrack(t,groupCallLocalStream)}catch(e){}});
+  peer.createOffer().then(o=>{peer.setLocalDescription(o);wsSend({type:'offer',convId:groupCallConvId,target:tgt,data:o})}).catch(()=>{});
+}
+function handleGroupOffer(from,data){
+  if(groupCallState==='idle')return;
+  let peer=groupCallPeers[from];
+  if(!peer){
+    peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+    groupCallPeers[from]=peer;
+    const tgt=from;
+    peer.onicecandidate=e=>{if(e.candidate&&ws&&ws.readyState===1)wsSend({type:'ice_candidate',convId:groupCallConvId,target:tgt,data:e.candidate})};
+    peer.ontrack=e=>{
+      if(e.streams[0]){callVideo.srcObject=e.streams[0];callVideo.style.display='block';document.querySelectorAll('.call-av')[0].style.display='none'}
+    };
+    if(groupCallLocalStream)groupCallLocalStream.getTracks().forEach(t=>{try{peer.addTrack(t,groupCallLocalStream)}catch(e){}});
+  }
+  peer.setRemoteDescription(new RTCSessionDescription(data)).then(()=>peer.createAnswer()).then(a=>peer.setLocalDescription(a).then(()=>wsSend({type:'answer',convId:groupCallConvId,target:from,data:a}))).catch(()=>{});
+}
+function handleGroupAnswer(from,data){
+  const peer=groupCallPeers[from];if(!peer)return;
+  peer.setRemoteDescription(new RTCSessionDescription(data)).catch(()=>{});
+}
+function handleGroupIce(from,data){
+  const peer=groupCallPeers[from];if(!peer)return;
+  peer.addIceCandidate(new RTCIceCandidate(data)).catch(()=>{});
+}
+function leaveGroupCall(){
+  for(const n in groupCallPeers){try{groupCallPeers[n].close()}catch(e){}}
+  groupCallPeers={};
+  if(groupCallLocalStream){groupCallLocalStream.getTracks().forEach(t=>t.stop());groupCallLocalStream=null}
+  wsSend({type:'leave_group_call',convId:groupCallConvId});
+  groupCallState='idle';groupCallParticipants=[];groupCallConvId=null;
+  closeGroupCallOverlay();
+}
+function endGroupCall(){
+  for(const n in groupCallPeers){try{groupCallPeers[n].close()}catch(e){}}
+  groupCallPeers={};
+  if(groupCallLocalStream){groupCallLocalStream.getTracks().forEach(t=>t.stop());groupCallLocalStream=null}
+  wsSend({type:'end_group_call',convId:groupCallConvId});
+  groupCallState='idle';groupCallParticipants=[];groupCallConvId=null;
+  closeGroupCallOverlay();
+}
+function closeGroupCallOverlay(){
+  callOverlay.classList.remove('on');
+  const pDiv=$('groupCallParticipants');if(pDiv)pDiv.style.display='none';
+  callBtns.innerHTML='<button class="cb-mid" id="callMuteBtn" onclick="toggleCallMute()">🎤</button><button class="cb-end" id="callEndBtn" onclick="endCall()">📞</button><button class="cb-mid" id="callSpeakerBtn" onclick="toggleSpeaker()">🔊</button>';
 }
 
 // DATA PERSISTENCE

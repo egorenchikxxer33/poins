@@ -27,6 +27,8 @@ let users = loadJSON(USERS_FILE);
 let conversations = loadJSON(CONVS_FILE);
 let messages = loadJSON(MSGS_FILE);
 
+const groupCalls = new Map(); // convId -> Set of participant names
+
 function saveUsers() { saveJSON(USERS_FILE, users); }
 function saveConvs() { saveJSON(CONVS_FILE, conversations); }
 function saveMsgs() { saveJSON(MSGS_FILE, messages); }
@@ -590,9 +592,72 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      // ============ GROUP CALLS ============
+      case 'start_group_call': {
+        if (!session) return;
+        const convId = data.convId;
+        const conv = conversations[convId];
+        if (!conv || conv.type !== 'group' || !conv.members.includes(session.name)) return;
+        if (!groupCalls.has(convId)) groupCalls.set(convId, new Set());
+        groupCalls.get(convId).add(session.name);
+        const participants = Array.from(groupCalls.get(convId));
+        sendToConv(conv, { type: 'group_call_started', from: session.name, convId, video: !!data.video, participants }, ws);
+        send(ws, { type: 'group_call_joined', from: session.name, convId, participants });
+        break;
+      }
+
+      case 'join_group_call': {
+        if (!session) return;
+        const convId = data.convId;
+        const conv = conversations[convId];
+        if (!conv || conv.type !== 'group' || !conv.members.includes(session.name)) return;
+        if (!groupCalls.has(convId)) return;
+        const call = groupCalls.get(convId);
+        call.add(session.name);
+        const participants = Array.from(call);
+        sendToConv(conv, { type: 'group_call_joined', from: session.name, convId, participants }, ws);
+        send(ws, { type: 'group_call_joined', from: session.name, convId, participants });
+        break;
+      }
+
+      case 'leave_group_call': {
+        if (!session) return;
+        const convId = data.convId;
+        const conv = conversations[convId];
+        if (!conv) return;
+        if (groupCalls.has(convId)) {
+          groupCalls.get(convId).delete(session.name);
+          if (groupCalls.get(convId).size === 0) groupCalls.delete(convId);
+        }
+        sendToConv(conv, { type: 'group_call_left', from: session.name, convId });
+        send(ws, { type: 'group_call_left', from: session.name, convId });
+        break;
+      }
+
+      case 'end_group_call': {
+        if (!session) return;
+        const convId = data.convId;
+        const conv = conversations[convId];
+        if (!conv) return;
+        groupCalls.delete(convId);
+        sendToConv(conv, { type: 'group_call_ended', from: session.name, convId });
+        break;
+      }
+
       case 'offer': case 'answer': case 'ice_candidate': {
-        if (!session) return; const target = data.target; if (!target) return;
-        for (const [client, s] of sessions) { if (s.name === target && client.readyState === 1) { send(client, { type: data.type, from: session.name, data: data.data }); break; } }
+        if (!session) return;
+        if (data.convId && data.target) {
+          // Targeted group call signaling — send only to the intended recipient
+          const conv = conversations[data.convId];
+          if (conv && (conv.members || conv.participants).includes(data.target)) {
+            for (const [client, s] of sessions) { if (s.name === data.target && client.readyState === 1) { send(client, { type: data.type, from: session.name, data: data.data, convId: data.convId }); break; } }
+          }
+        } else if (data.convId) {
+          const conv = conversations[data.convId];
+          if (conv) sendToConv(conv, { type: data.type, from: session.name, data: data.data, convId: data.convId }, ws);
+        } else if (data.target) {
+          for (const [client, s] of sessions) { if (s.name === data.target && client.readyState === 1) { send(client, { type: data.type, from: session.name, data: data.data }); break; } }
+        }
         break;
       }
     }
@@ -603,6 +668,18 @@ wss.on('connection', (ws) => {
       if (users[session.name]) users[session.name].lastSeen = Date.now();
       saveUsers(); sessions.delete(ws);
       broadcast({ type: 'user_offline', name: session.name, users: buildUserList(), online: sessions.size });
+      // Clean up group calls
+      for (const [convId, participants] of groupCalls) {
+        if (participants.has(session.name)) {
+          participants.delete(session.name);
+          if (participants.size === 0) {
+            groupCalls.delete(convId);
+          } else {
+            const conv = conversations[convId];
+            if (conv) sendToConv(conv, { type: 'group_call_left', from: session.name, convId });
+          }
+        }
+      }
     }
   });
 });
