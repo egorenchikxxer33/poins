@@ -134,13 +134,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .dsep{text-align:center;color:var(--text3);font-size:10px;padding:12px 0 6px;position:sticky;top:0;z-index:1}
 .dsep span{background:var(--surface);padding:4px 14px;border-radius:20px;border:1px solid var(--border);font-weight:500;font-size:10px;color:var(--text2);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .sys{text-align:center;color:var(--text3);font-size:10px;padding:6px 0;animation:fIn .3s var(--ease)}
-.mw{position:relative;max-width:70%;margin-bottom:4px;animation:mIn .25s var(--ease-o)}
-.mw.me{align-self:flex-end}
+.mw{position:relative;max-width:70%;margin-bottom:4px;animation:mIn .25s var(--ease-o);display:flex;gap:8px}
+.mw.me{align-self:flex-end;flex-direction:row-reverse}
 .mw.ot{align-self:flex-start}
-.m{padding:8px 14px;border-radius:14px;font-size:14px;line-height:1.5;word-wrap:break-word;position:relative}
+.mw .m-av{width:34px;height:34px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--prim-grad);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#fff;margin-top:0}
+.mw .m-av img{width:100%;height:100%;object-fit:cover}
+.m{padding:8px 14px;border-radius:14px;font-size:14px;line-height:1.5;word-wrap:break-word;position:relative;flex:1}
 .mw.me .m{background:var(--prim);color:#fff;border-bottom-right-radius:4px;box-shadow:0 2px 8px var(--prim-g)}
 .mw.ot .m{background:var(--surface);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px}
 .mw.ot .m:hover{border-color:rgba(29,107,240,.12);background:var(--surface-h)}
+.mw.ot .m.m-with-av{border-bottom-left-radius:14px;margin-left:0}
+.mw.ot .m.m-with-av .author{padding-left:0}
 .m .author{font-size:10px;font-weight:600;margin-bottom:2px;display:flex;align-items:center;gap:4px}
 .mw.me .author{color:rgba(255,255,255,.5);text-align:right;justify-content:flex-end}
 .mw.ot .author{color:#4a8cff}
@@ -799,8 +803,6 @@ function renderNewChatUsers(){
 // CONV INFO
 function showConvInfo(){
   if(!currentConv)return;
-  wsSend({type:'get_conv_info',convId:currentConv});
-  // We get it async - for groups we show modal
   const c=convs.find(x=>x.id===currentConv);
   if(!c)return;
   if(c.type==='group'){
@@ -836,9 +838,15 @@ function addMsg(author,text,type,time,id,system){
   const mid=id||mid();
   const u=allUsers.find(x=>x.name===author);
   const ac=u&&u.color?u.color:'var(--prim)';
+  const avHtml=u&&u.avatar?`<img src="${u.avatar}" alt="">`:null;
   const w=document.createElement('div');w.className=`mw ${type}`;w.id=mid;
-  let in2=`<div class="m">`;
-  in2+=`<div class="author" style="color:${type==='ot'?ac:''}">${esc(author)}</div>${procText(text)}<div class="time">${fT(time)}</div><div class="rr" id="r_${mid}"></div></div>`;
+  let in2=``;
+  if(type==='ot' && avHtml){
+    in2+=`<div class="m-av">${avHtml}</div>`;
+  }
+  in2+=`<div class="m${type==='ot'&&avHtml?' m-with-av':''}">`;
+  if(type==='ot'||isGroup)in2+=`<div class="author" style="color:${type==='ot'?ac:''}">${esc(author)}</div>`;
+  in2+=`${procText(text)}<div class="time">${fT(time)}</div><div class="rr" id="r_${mid}"></div></div>`;
   in2+=`<div class="rp">${['👍','❤️','😂','😮','😢','🔥','🎉','💀'].map(r=>`<span data-m="${mid}" data-r="${r}">${r}</span>`).join('')}</div>`;
   if(type==='me')in2+=`<button class="mdel" onclick="delMsg('${mid}')">✕</button>`;
   w.innerHTML=in2;
