@@ -299,8 +299,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .ua:hover .ua-over{opacity:1}
 .un{font-size:18px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px}
 .us{font-size:11px;color:var(--text3);margin-top:2px}
-/* PIN BANNER FIX */
-#pinBanner{display:none;font-size:11px;color:var(--text2);cursor:pointer;padding:4px 8px;background:var(--surface);border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
 </style>
 </head>
 <body>
@@ -454,14 +452,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
     <div class="st-row" onclick="openPremium()"><div class="st-icon" style="background:linear-gradient(135deg,#ffd700,#ffb300);color:#1a1a2e">⭐</div><div class="st-info"><div class="st-title">Premium</div><div class="st-desc" id="premDesc">Статус, эмодзи, темы, стикеры и другое</div></div><span class="st-arr">→</span></div>
     <div class="st-row" onclick="oModal('newChatModal')"><div class="st-icon">✉️</div><div class="st-info"><div class="st-title">Новый чат</div><div class="st-desc">Начать диалог с пользователем</div></div><span class="st-arr">→</span></div>
     <div class="st-row" onclick="oModal('groupModal')"><div class="st-icon">👥</div><div class="st-info"><div class="st-title">Создать группу</div><div class="st-desc">Общий чат с несколькими людьми</div></div><span class="st-arr">→</span></div>
-    <div class="st-row" onclick="oModal('stickersModal')"><div class="st-icon">🎨</div><div class="st-info"><div class="st-title">Стикеры</div><div class="st-desc">Загрузить свои стикеры (Premium)</div></div><span class="st-arr">→</span></div>
+    <div class="st-row" onclick="oModal('stickersModal');renderStickers()"><div class="st-icon">🎨</div><div class="st-info"><div class="st-title">Стикеры</div><div class="st-desc">Загрузить свои стикеры (Premium)</div></div><span class="st-arr">→</span></div>
     <div class="st-row" onclick="oModal('callHistoryModal');loadCallHistory()"><div class="st-icon">📞</div><div class="st-info"><div class="st-title">История звонков</div><div class="st-desc">Просмотреть историю вызовов</div></div><span class="st-arr">→</span></div>
     <div class="st-row" onclick="exportChat()" id="exportRow"><div class="st-icon">📥</div><div class="st-info"><div class="st-title">Экспорт чата</div><div class="st-desc">Скачать историю текущего чата</div></div><span class="st-arr">→</span></div>
     <div class="st-row" onclick="oModal('passwordModal')"><div class="st-icon">🔑</div><div class="st-info"><div class="st-title">Сменить пароль</div><div class="st-desc">Обновить пароль аккаунта</div></div><span class="st-arr">→</span></div>
     <div class="st-row" onclick="oModal('blockListModal');renderBlockList()"><div class="st-icon">🚫</div><div class="st-info"><div class="st-title">Чёрный список</div><div class="st-desc">Заблокированные пользователи</div></div><span class="st-arr">→</span></div>
     <div class="st-row" onclick="wsSend({type:'get_favorites'});oModal('favoritesModal')"><div class="st-icon">⭐</div><div class="st-info"><div class="st-title">Избранное</div><div class="st-desc">Сохранённые сообщения</div></div><span class="st-arr">→</span></div>
     <div class="st-row" onclick="oModal('deleteAccountModal')"><div class="st-icon" style="background:rgba(231,76,76,.15)">⚠️</div><div class="st-info"><div class="st-title" style="color:var(--danger)">Удалить аккаунт</div><div class="st-desc">Полное удаление всех данных</div></div><span class="st-arr">→</span></div>
-    <div class="st-row" onclick="cModal('settingsModal')" style="border:none"><div class="st-icon" style="background:rgba(231,76,76,.15)">🚪</div><div class="st-info"><div class="st-title" style="color:var(--danger)">Выйти</div><div class="st-desc">Завершить сеанс</div></div><span class="st-arr">→</span></div>
+    <div class="st-row" onclick="logout()" style="border:none"><div class="st-icon" style="background:rgba(231,76,76,.15)">🚪</div><div class="st-info"><div class="st-title" style="color:var(--danger)">Выйти</div><div class="st-desc">Завершить сеанс</div></div><span class="st-arr">→</span></div>
   </div>
 </div>
 
@@ -740,8 +738,8 @@ function connect(){
       case 'theme_set':applyTheme(d.theme);break;
       case 'bg_set':notif('✅ Фон чата обновлён');break;
       case 'name_color_set':notif('✅ Цвет ника обновлён');break;
-      case 'sticker_added':myStickers=d.stickers||[];renderStickers();notif('✅ Стикер добавлен');break;
-      case 'sticker_removed':myStickers=d.stickers||[];renderStickers();break;
+      case 'sticker_added':myStickers=d.stickers||[];if(myProfile)myProfile.stickers=myStickers;renderStickers();notif('✅ Стикер добавлен');break;
+      case 'sticker_removed':myStickers=d.stickers||[];if(myProfile)myProfile.stickers=myStickers;renderStickers();break;
       case 'call_history_list':renderCallHistory(d.history||[]);break;
       case 'chat_export':downloadChatExport(d.messages||[],d.conversation||{});break;
 
@@ -1100,15 +1098,13 @@ const stickerBtn=$('stickerBtn'),sp=$('stickerPicker');
 stickerBtn.addEventListener('click',()=>{
   sp.style.display=sp.style.display==='grid'?'none':'grid';
   ep.classList.remove('on');
-  const user=allUsers.find(x=>x.name===userName);
-  const stickers=user&&user.premium&&user.stickers?user.stickers:(myStickers||[]);
+  const stickers=(myProfile&&myProfile.stickers)||myStickers||[];
   if(!stickers.length){sp.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px;text-align:center">Нет стикеров</div>';return}
   sp.innerHTML=stickers.map((s,i)=>'<span style="cursor:pointer;padding:4px;border-radius:6px;text-align:center;transition:all .1s" onclick="sendSticker('+i+')"><img src="'+esc(s)+'" style="width:40px;height:40px;object-fit:contain"></span>').join('');
 });
 document.addEventListener('click',e=>{if(!stickerBtn.contains(e.target)&&!sp.contains(e.target))sp.style.display='none'});
 function sendSticker(i){
-  const user=allUsers.find(x=>x.name===userName);
-  const stickers=user&&user.premium&&user.stickers?user.stickers:(myStickers||[]);
+  const stickers=(myProfile&&myProfile.stickers)||myStickers||[];
   if(!stickers[i])return;
   const p={type:'send_msg',text:'[sticker]'+stickers[i]};
   if(currentConv)p.convId=currentConv;
@@ -1288,7 +1284,7 @@ function openProf(){
 // MODALS
 function oModal(id){document.getElementById(id).classList.add('on')}
 function cModal(id){document.getElementById(id).classList.remove('on')}
-['profileModal','newChatModal','groupModal','settingsModal','convInfoModal'].forEach(id=>{
+['profileModal','newChatModal','groupModal','settingsModal','convInfoModal','premiumModal','stickersModal','callHistoryModal','forwardModal','passwordModal','deleteAccountModal','blockListModal','favoritesModal'].forEach(id=>{
   document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)cModal(id)})
 });
 
