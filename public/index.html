@@ -537,7 +537,12 @@ const callBtn=$('callBtn'),videoBtn=$('videoBtn');
 
 const WS_URL=`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}`;
 
-function wsSend(d){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(d))}
+let pendingMsg=null;
+function wsSend(d){
+  if(ws&&ws.readyState===WebSocket.OPEN){ws.send(JSON.stringify(d));return true}
+  else if(ws&&ws.readyState===WebSocket.CONNECTING){pendingMsg=d;authConn.textContent='⏳ Соединение...';return false}
+  else{authConn.textContent='✕ Нет соединения';return false}
+}
 
 // AUTH
 document.querySelectorAll('.tab').forEach(t=>{t.addEventListener('click',()=>{
@@ -548,7 +553,8 @@ function doAuth(type){
   const u=(type==='login'?$('loginName'):$('regName')).value.trim();
   const p=(type==='login'?$('loginPass'):$('regPass')).value;
   if(!u||!p){authErr.textContent='Заполните поля';return}
-  wsSend({type,username:u,password:p});
+  const sent=wsSend({type,username:u,password:p});
+  if(sent)authErr.textContent=type==='register'?'Регистрирую...':'Вхожу...';
 }
 $('loginForm').addEventListener('submit',e=>{e.preventDefault();doAuth('login')});
 $('registerForm').addEventListener('submit',e=>{e.preventDefault();doAuth('register')});
@@ -557,7 +563,10 @@ $('registerForm').addEventListener('submit',e=>{e.preventDefault();doAuth('regis
 function connect(){
   if(ws)try{ws.close()}catch{}
   ws=new WebSocket(WS_URL);
-  ws.onopen=()=>{authConn.textContent='● Подключено'};
+  ws.onopen=()=>{
+    authConn.textContent='● Подключено';
+    if(pendingMsg){ws.send(JSON.stringify(pendingMsg));pendingMsg=null;authErr.textContent='Отправляю...'}
+  };
   ws.onclose=()=>{authConn.textContent='○ Переподключение...';setTimeout(connect,2000)};
   ws.onerror=()=>{authConn.textContent='✕ Ошибка'};
   ws.onmessage=e=>{
