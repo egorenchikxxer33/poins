@@ -1,0 +1,10 @@
+{
+  "name": "poins",
+  "version": "1.0.0",
+  "description": "Poins Messenger",
+  "private": true,
+  "main": "server.js",
+  "engines": { "node": ">=18.0.0" },
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "ws": "^8.18.0" }
+}
