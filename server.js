@@ -69,6 +69,40 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocketServer({ server });
 
+function broadcast(data, exclude) {
+  const msg = JSON.stringify(data);
+  for (const [ws] of sessions) { if (ws !== exclude && ws.readyState === 1) ws.send(msg); }
+}
+function send(ws, data) { if (ws.readyState === 1) ws.send(JSON.stringify(data)); }
+
+function buildUserList() {
+  return Object.keys(users).map(n => {
+    const u = users[n];
+    const showOnline = u.invisible ? false : Array.from(sessions.values()).some(s => s.name === n);
+    return { name: n, color: u.color || '#1d6bf0', online: showOnline, avatar: u.avatar || '', bio: u.bio || '', premium: !!u.premium, emojiStatus: u.emojiStatus || '' };
+  });
+}
+
+function getConvForUser(convId, username) {
+  const c = conversations[convId]; if (!c) return null;
+  if (c.type === 'dm' && !c.participants.includes(username)) return null;
+  if (c.type === 'group' && !c.members.includes(username)) return null;
+  return c;
+}
+
+function isBlocked(target, by) { const u = users[by]; return u && u.blocked && u.blocked.includes(target); }
+function msgTargets(conv) { return conv.type === 'dm' ? conv.participants : conv.members; }
+
+function userProfile(name) {
+  const u = users[name]; if (!u) return { name };
+  return { name, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '', premium: !!u.premium, emojiStatus: u.emojiStatus || '', theme: u.theme || 'midnight', bgImage: u.bgImage || '', nameColor: u.nameColor || '', premiumUntil: u.premiumUntil || null };
+}
+
+function sendToConv(conv, data, excludeWs) {
+  const targets = msgTargets(conv);
+  for (const [client, s] of sessions) { if (s && targets.includes(s.name) && client !== excludeWs && client.readyState === 1) send(client, data); }
+}
+
 wss.on('connection', (ws) => {
   let session = null;
 
