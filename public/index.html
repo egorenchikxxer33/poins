@@ -1659,8 +1659,6 @@ try{savedUser=localStorage.getItem('poins_remember');savedPass=localStorage.getI
 if(savedUser){$('loginName').value=savedUser;$('rmLogin').checked=true}
 if(savedUser&&savedPass){$('loginPass').value=savedPass;pendingMsg={type:'login',username:savedUser,password:savedPass};authErr.textContent='⏳ Автовход...'}
 if('Notification'in window&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}
-updateMobileUI();
-
 connect();window.addEventListener('beforeunload',saveData);
 </script>
 </body>
