@@ -67,12 +67,17 @@ function send(ws, data) {
 }
 
 function buildUserList() {
-  return Object.keys(users).map(n => ({
-    name: n, color: users[n].color || '#1d6bf0',
-    online: Array.from(sessions.values()).some(s => s.name === n),
-    avatar: users[n].avatar || '',
-    bio: users[n].bio || '',
-  }));
+  return Object.keys(users).map(n => {
+    const u = users[n];
+    return {
+      name: n, color: u.color || '#1d6bf0',
+      online: Array.from(sessions.values()).some(s => s.name === n),
+      avatar: u.avatar || '',
+      bio: u.bio || '',
+      premium: !!u.premium,
+      emojiStatus: u.emojiStatus || '',
+    };
+  });
 }
 
 function getConvForUser(convId, username) {
@@ -103,6 +108,8 @@ wss.on('connection', (ws) => {
         users[username] = {
           password: hash(password), role: 'user',
           bio: '', color: '#1d6bf0', avatar: '',
+          premium: false, emojiStatus: '', theme: 'dark',
+          bgImage: '', nameColor: '', stickers: [],
           created: Date.now(), lastSeen: Date.now(),
         };
         saveUsers();
@@ -124,7 +131,12 @@ wss.on('connection', (ws) => {
         send(ws, {
           type: 'login_ok', user: username,
           users: buildUserList(), online: sessions.size,
-          profile: { name: username, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '' },
+          profile: {
+            name: username, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '',
+            premium: !!u.premium, emojiStatus: u.emojiStatus || '',
+            theme: u.theme || 'dark', bgImage: u.bgImage || '',
+            nameColor: u.nameColor || '',
+          },
         });
         broadcast({ type: 'user_online', name: username, users: buildUserList(), online: sessions.size }, ws);
         break;
@@ -138,8 +150,141 @@ wss.on('connection', (ws) => {
         if (data.bio !== undefined) u.bio = data.bio.slice(0, 200);
         if (data.color !== undefined) u.color = data.color;
         if (data.avatar !== undefined) u.avatar = data.avatar;
+        if (data.nameColor !== undefined) u.nameColor = data.nameColor;
         saveUsers();
-        broadcast({ type: 'profile_updated', name: session.name, profile: { name: session.name, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '' } });
+        broadcast({
+          type: 'profile_updated', name: session.name,
+          profile: {
+            name: session.name, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '',
+            premium: !!u.premium, emojiStatus: u.emojiStatus || '',
+            theme: u.theme || 'dark', bgImage: u.bgImage || '',
+            nameColor: u.nameColor || '',
+          },
+        });
+        break;
+      }
+
+      // ============ PREMIUM ============
+      case 'premium_activate': {
+        if (!session) return;
+        const u = users[session.name];
+        if (!u) return;
+        // Accept any non-empty code as activation for now
+        if (!data.code || !data.code.trim()) { send(ws, { type: 'error', message: 'Введите код' }); return; }
+        u.premium = true;
+        u.premiumUntil = Date.now() + 365 * 24 * 60 * 60 * 1000; // 1 year
+        saveUsers();
+        send(ws, { type: 'premium_activated' });
+        broadcast({
+          type: 'profile_updated', name: session.name,
+          profile: {
+            name: session.name, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '',
+            premium: !!u.premium, emojiStatus: u.emojiStatus || '',
+            theme: u.theme || 'dark', bgImage: u.bgImage || '',
+            nameColor: u.nameColor || '',
+          },
+        });
+        break;
+      }
+
+      case 'set_emoji_status': {
+        if (!session) return;
+        const u = users[session.name];
+        if (!u) return;
+        u.emojiStatus = (data.status || '').slice(0, 4);
+        saveUsers();
+        broadcast({
+          type: 'profile_updated', name: session.name,
+          profile: {
+            name: session.name, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '',
+            premium: !!u.premium, emojiStatus: u.emojiStatus || '',
+            theme: u.theme || 'dark', bgImage: u.bgImage || '',
+            nameColor: u.nameColor || '',
+          },
+        });
+        break;
+      }
+
+      case 'set_theme': {
+        if (!session) return;
+        const u = users[session.name];
+        if (!u) return;
+        const themes = ['dark', 'light', 'green', 'pink'];
+        if (!themes.includes(data.theme)) { send(ws, { type: 'error', message: 'Недопустимая тема' }); return; }
+        u.theme = data.theme;
+        saveUsers();
+        send(ws, { type: 'theme_set', theme: u.theme });
+        break;
+      }
+
+      case 'set_bg': {
+        if (!session) return;
+        const u = users[session.name];
+        if (!u) return;
+        u.bgImage = data.bgImage || '';
+        saveUsers();
+        send(ws, { type: 'bg_set' });
+        break;
+      }
+
+      case 'set_name_color': {
+        if (!session) return;
+        const u = users[session.name];
+        if (!u) return;
+        u.nameColor = data.color || '';
+        saveUsers();
+        send(ws, { type: 'name_color_set' });
+        break;
+      }
+
+      // ============ STICKERS ============
+      case 'add_sticker': {
+        if (!session) return;
+        const u = users[session.name];
+        if (!u) return;
+        if (!u.premium) { send(ws, { type: 'error', message: 'Только для Premium' }); return; }
+        if (!data.sticker) { send(ws, { type: 'error', message: 'Нет данных стикера' }); return; }
+        if (!u.stickers) u.stickers = [];
+        if (u.stickers.length >= 20) { send(ws, { type: 'error', message: 'Максимум 20 стикеров' }); return; }
+        u.stickers.push(data.sticker);
+        saveUsers();
+        send(ws, { type: 'sticker_added', stickers: u.stickers });
+        break;
+      }
+
+      case 'remove_sticker': {
+        if (!session) return;
+        const u = users[session.name];
+        if (!u) return;
+        if (!u.stickers) u.stickers = [];
+        const idx = data.index;
+        if (idx !== undefined && idx >= 0 && idx < u.stickers.length) {
+          u.stickers.splice(idx, 1);
+          saveUsers();
+        }
+        send(ws, { type: 'sticker_removed', stickers: u.stickers });
+        break;
+      }
+
+      // ============ CALL HISTORY ============
+      case 'call_history': {
+        if (!session) return;
+        const u = users[session.name];
+        if (!u) return;
+        const history = u.callHistory || [];
+        send(ws, { type: 'call_history_list', history: history.slice(-50) });
+        break;
+      }
+
+      // ============ EXPORT CHAT ============
+      case 'export_chat': {
+        if (!session) return;
+        const convId = data.convId;
+        if (!convId) return;
+        const conv = getConvForUser(convId, session.name);
+        if (!conv) { send(ws, { type: 'error', message: 'Нет доступа' }); return; }
+        const msgs = messages[convId] || [];
+        send(ws, { type: 'chat_export', convId, messages: msgs, conversation: conv });
         break;
       }
 
@@ -343,6 +488,31 @@ wss.on('connection', (ws) => {
       case 'call_end': {
         if (!session) return;
         const target = (data.target || '').trim();
+        // Record call history
+        const u = users[session.name];
+        if (u) {
+          if (!u.callHistory) u.callHistory = [];
+          const duration = data.duration || 0;
+          const callType = data.video ? 'video' : 'audio';
+          u.callHistory.push({
+            with: target, type: callType, duration,
+            time: new Date().toISOString(), direction: 'outgoing',
+          });
+          if (u.callHistory.length > 50) u.callHistory = u.callHistory.slice(-50);
+          saveUsers();
+        }
+        const tu = users[target];
+        if (tu) {
+          if (!tu.callHistory) tu.callHistory = [];
+          const duration = data.duration || 0;
+          const callType = data.video ? 'video' : 'audio';
+          tu.callHistory.push({
+            with: session.name, type: callType, duration,
+            time: new Date().toISOString(), direction: 'incoming',
+          });
+          if (tu.callHistory.length > 50) tu.callHistory = tu.callHistory.slice(-50);
+          saveUsers();
+        }
         for (const [client, s] of sessions) {
           if (s.name === target && client.readyState === 1) {
             send(client, { type: 'call_ended', from: session.name });
