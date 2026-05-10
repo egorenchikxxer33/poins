@@ -563,7 +563,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 const $=id=>document.getElementById(id);
 const EMOJIS=['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😗','😋','😛','😜','🤪','😝','🤑','🤗','🤔','🤐','😐','😑','😶','😏','😒','🙄','😬','😮','😯','😲','😳','🥺','😢','😭','😤','😡','🤬','😈','👿','💀','☠️','💩','🤡','👍','👎','👊','✊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','💪','✌️','🤟','🤘','👋','🤙','💅','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','💕','💗','💖','💘','✨','🔥','⭐','🌟','💫','🎉','🎊','🎈','🎁','🏆','👑','💎','✅','❌','💯','🆒','🆕','🆗'];
 
-let ws,userName,allUsers=[],convs=[],currentConv,currentType,isGroup=false,myProfile=null,isPremium=false,myStickers=[];
+let ws,userName,allUsers=[],convs=[],currentConv,currentType,isGroup=false,myProfile=null,isPremium=false,premUntil=null,myStickers=[];
 let lastDate='',midC=0,pageFocused=true,unread={};
 let typing={},typingT,replyTo;
 
@@ -629,7 +629,7 @@ function connect(){
       case 'register_ok':authErr.textContent='✅ Зарегистрировано! Войдите.';document.querySelectorAll('.tab')[0].click();$('loginName').value=$('regName').value;break;
       case 'login_ok':
         userName=d.user;allUsers=d.users||[];myProfile=d.profile;
-        isPremium=!!(d.profile&&d.profile.premium);
+        isPremium=!!(d.profile&&d.profile.premium);premUntil=d.profile&&d.profile.premiumUntil;
         auth.style.display='none';app.classList.add('on');
         hdrUser.textContent=userName;updateHdrAv();
         upOnline();reqUsers();reqConvs();renderTab('chats');
@@ -682,7 +682,7 @@ function connect(){
       case 'reaction':if(d.name!==userName)addR(d.msgId,d.reaction);break;
 
       // PREMIUM
-      case 'premium_activated':isPremium=true;notif('⭐ Premium активирован!');openPremium();break;
+      case 'premium_activated':isPremium=true;premUntil=d.until;notif('⭐ Premium активирован!');openPremium();break;
       case 'theme_set':applyTheme(d.theme);break;
       case 'bg_set':notif('✅ Фон чата обновлён');break;
       case 'name_color_set':notif('✅ Цвет ника обновлён');break;
@@ -1071,6 +1071,7 @@ function openPremium(){
   const p=myProfile||{};
   $('premContent').innerHTML=`
     <div class="ir"><span>Статус</span><span>${isPremium?'⭐ Premium активен':'🆓 Бесплатно'}</span></div>
+    ${isPremium&&premUntil?`<div class="ir"><span>Действует до</span><span style="color:var(--text2)">${new Date(premUntil).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</span></div>`:''}
     ${isPremium?'':`<button class="mb" onclick="activatePremium()">⭐ Активировать Premium</button>`}
     <label>Эмодзи-статус</label>
     <div style="display:flex;gap:6px;margin-top:4px">

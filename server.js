@@ -13,6 +13,7 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const CONVS_FILE = path.join(DATA_DIR, 'conversations.json');
 const MSGS_FILE = path.join(DATA_DIR, 'messages.json');
+const KEYS_FILE = path.join(DATA_DIR, 'keys.json');
 
 function loadJSON(file) {
   if (!fs.existsSync(file)) return {};
@@ -32,6 +33,27 @@ function saveMsgs() { saveJSON(MSGS_FILE, messages); }
 
 function hash(pw) {
   return crypto.createHash('sha256').update(pw).digest('hex');
+}
+
+function genID(len) { return crypto.randomBytes(len).toString('hex'); }
+
+// Premium keys
+let premiumKeys = loadJSON(KEYS_FILE);
+if (!premiumKeys || !premiumKeys.keys || !premiumKeys.keys.length) {
+  const keys = [];
+  for (let i = 0; i < 10; i++) {
+    keys.push({
+      code: genID(6), // 12-char hex code
+      durationMs: 10 * 24 * 60 * 60 * 1000, // 10 days
+      used: false,
+      usedBy: null,
+      usedAt: null,
+    });
+  }
+  premiumKeys = { keys };
+  saveJSON(KEYS_FILE, premiumKeys);
+  console.log(`  🔑 Сгенерировано ${keys.length} премиум-ключей:`);
+  keys.forEach(k => console.log(`     ${k.code}`));
 }
 
 const sessions = new Map();
@@ -136,6 +158,7 @@ wss.on('connection', (ws) => {
             premium: !!u.premium, emojiStatus: u.emojiStatus || '',
             theme: u.theme || 'dark', bgImage: u.bgImage || '',
             nameColor: u.nameColor || '',
+            premiumUntil: u.premiumUntil || null,
           },
         });
         broadcast({ type: 'user_online', name: username, users: buildUserList(), online: sessions.size }, ws);
@@ -169,12 +192,18 @@ wss.on('connection', (ws) => {
         if (!session) return;
         const u = users[session.name];
         if (!u) return;
-        // Accept any non-empty code as activation for now
         if (!data.code || !data.code.trim()) { send(ws, { type: 'error', message: 'Введите код' }); return; }
+        const code = data.code.trim().toLowerCase();
+        const key = premiumKeys.keys.find(k => k.code === code && !k.used);
+        if (!key) { send(ws, { type: 'error', message: 'Неверный или уже использованный ключ' }); return; }
+        key.used = true;
+        key.usedBy = session.name;
+        key.usedAt = new Date().toISOString();
         u.premium = true;
-        u.premiumUntil = Date.now() + 365 * 24 * 60 * 60 * 1000; // 1 year
+        u.premiumUntil = Date.now() + key.durationMs;
+        saveJSON(KEYS_FILE, premiumKeys);
         saveUsers();
-        send(ws, { type: 'premium_activated' });
+        send(ws, { type: 'premium_activated', until: u.premiumUntil });
         broadcast({
           type: 'profile_updated', name: session.name,
           profile: {
@@ -182,6 +211,7 @@ wss.on('connection', (ws) => {
             premium: !!u.premium, emojiStatus: u.emojiStatus || '',
             theme: u.theme || 'dark', bgImage: u.bgImage || '',
             nameColor: u.nameColor || '',
+            premiumUntil: u.premiumUntil || null,
           },
         });
         break;
