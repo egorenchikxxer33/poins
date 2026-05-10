@@ -1659,7 +1659,7 @@ function saveDataThrottled(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setT
 function loadData(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null}catch(e){return null}}
 function clearSavedData(){try{localStorage.removeItem(SAVE_KEY);localStorage.removeItem('poins_remember');localStorage.removeItem('poins_pass')}catch(e){}}
 // AUTO-LOGIN
-let savedUser=null,savedPass=null;
+let savedUser=null;
 try{savedUser=localStorage.getItem('poins_remember');savedPass=localStorage.getItem('poins_pass')}catch(e){}
 if(savedUser){$('loginName').value=savedUser;$('rmLogin').checked=true}
 if(savedUser&&savedPass){$('loginPass').value=savedPass;pendingMsg={type:'login',username:savedUser,password:savedPass};authErr.textContent='⏳ Автовход...'}
