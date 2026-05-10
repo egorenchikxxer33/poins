@@ -33,6 +33,16 @@ function saveMsgs() { saveJSON(MSGS_FILE, messages); }
 
 function hash(pw) { return crypto.createHash('sha256').update(pw).digest('hex'); }
 function genID(len) { return crypto.randomBytes(len).toString('hex'); }
+function checkPremiumExpiry() {
+  const now = Date.now();
+  for (const name in users) {
+    const u = users[name];
+    if (u.premium && u.premiumUntil && u.premiumUntil < now) {
+      u.premium = false;
+      u.premiumUntil = null;
+    }
+  }
+}
 
 // Premium keys
 let premiumKeys = loadJSON(KEYS_FILE);
@@ -95,7 +105,7 @@ function msgTargets(conv) { return conv.type === 'dm' ? conv.participants : conv
 
 function userProfile(name) {
   const u = users[name]; if (!u) return { name };
-  return { name, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '', premium: !!u.premium, emojiStatus: u.emojiStatus || '', theme: u.theme || 'midnight', bgImage: u.bgImage || '', nameColor: u.nameColor || '', premiumUntil: u.premiumUntil || null };
+  return { name, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '', premium: !!u.premium, emojiStatus: u.emojiStatus || '', theme: u.theme || 'midnight', bgImage: u.bgImage || '', nameColor: u.nameColor || '', premiumUntil: u.premiumUntil || null, stickers: u.stickers || [] };
 }
 
 function sendToConv(conv, data, excludeWs) {
@@ -128,7 +138,7 @@ wss.on('connection', (ws) => {
         const { username, password } = data;
         const u = users[username];
         if (!u || u.password !== hash(password)) { send(ws, { type: 'error', message: 'Неверное имя или пароль' }); return; }
-        u.lastSeen = Date.now(); saveUsers();
+        checkPremiumExpiry(); u.lastSeen = Date.now(); saveUsers();
         session = { name: username }; sessions.set(ws, session);
         send(ws, { type: 'login_ok', user: username, users: buildUserList(), online: sessions.size, profile: userProfile(username) });
         broadcast({ type: 'user_online', name: username, users: buildUserList(), online: sessions.size }, ws);
@@ -572,9 +582,10 @@ wss.on('connection', (ws) => {
       case 'call_end': {
         if (!session) return; const target = (data.target || '').trim();
         const u = users[session.name];
-        if (u) { if (!u.callHistory) u.callHistory = []; u.callHistory.push({ with: target, type: data.video ? 'video' : 'audio', duration: data.duration || 0, time: new Date().toISOString(), direction: 'outgoing' }); if (u.callHistory.length > 50) u.callHistory = u.callHistory.slice(-50); saveUsers(); }
+        if (u) { if (!u.callHistory) u.callHistory = []; u.callHistory.push({ with: target, type: data.video ? 'video' : 'audio', duration: data.duration || 0, time: new Date().toISOString(), direction: 'outgoing' }); if (u.callHistory.length > 50) u.callHistory = u.callHistory.slice(-50); }
         const tu = users[target];
-        if (tu) { if (!tu.callHistory) tu.callHistory = []; tu.callHistory.push({ with: session.name, type: data.video ? 'video' : 'audio', duration: data.duration || 0, time: new Date().toISOString(), direction: 'incoming' }); if (tu.callHistory.length > 50) tu.callHistory = tu.callHistory.slice(-50); saveUsers(); }
+        if (tu) { if (!tu.callHistory) tu.callHistory = []; tu.callHistory.push({ with: session.name, type: data.video ? 'video' : 'audio', duration: data.duration || 0, time: new Date().toISOString(), direction: 'incoming' }); if (tu.callHistory.length > 50) tu.callHistory = tu.callHistory.slice(-50); }
+        saveUsers();
         for (const [client, s] of sessions) { if (s.name === target && client.readyState === 1) { send(client, { type: 'call_ended', from: session.name }); break; } }
         break;
       }
