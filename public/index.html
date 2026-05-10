@@ -94,20 +94,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .app{display:none;width:100%;height:100vh}.app.on{display:flex;flex-direction:column}
 
 /* HEADER */
-.lbar{width:60px;background:linear-gradient(180deg,rgba(13,17,28,.98),rgba(8,11,20,.98));border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:10px 0 8px;flex-shrink:0;z-index:11;gap:2px}
-.lb-user{width:42px;height:42px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--prim-grad);background-size:200% 200%;color:#fff;font-weight:700;font-size:16px;transition:all .2s var(--ease);position:relative;overflow:hidden;margin-bottom:2px;animation:gradientShift 4s ease-in-out infinite;box-shadow:0 2px 8px rgba(0,0,0,.3);flex-shrink:0}
-.lb-user:hover{transform:scale(1.08);border-radius:14px;box-shadow:0 4px 16px var(--prim-g)}
-.lb-user:active{transform:scale(.93);border-radius:10px}
-.lb-av{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
-.lb-av img{width:100%;height:100%;object-fit:cover}
-.lb-un{display:none}
-.lb-badge{position:absolute;bottom:-2px;right:-2px;background:var(--danger);color:#fff;font-size:8px;font-weight:700;padding:1px 4px;border-radius:8px;min-width:14px;text-align:center;border:2px solid var(--bg);box-shadow:0 2px 6px rgba(0,0,0,.4);line-height:1.2}
-.lb-div{width:28px;height:1px;background:var(--border);margin:6px 0 4px;flex-shrink:0}
-.lbb{width:42px;height:42px;border-radius:10px;border:none;background:transparent;color:var(--text3);font-size:18px;cursor:pointer;transition:all .2s var(--ease);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
-.lbb:hover{background:var(--surface);color:var(--text);transform:translateX(2px)}
-.lbb.on{background:var(--prim-l);color:var(--prim)}
-.lbb:active{transform:scale(.88)}
-.lb-sp{flex:1;min-height:4px}
+.sbu{display:flex;align-items:center;padding:10px 12px 8px;gap:8px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sbu-main{display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;border-radius:10px;padding:4px;transition:all .15s var(--ease);min-width:0}
+.sbu-main:hover{background:var(--surface)}
+.sbu-av{width:36px;height:36px;border-radius:50%;background:var(--prim-grad);background-size:200% 200%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3);overflow:hidden;animation:gradientShift 4s ease-in-out infinite}
+.sbu-av img{width:100%;height:100%;object-fit:cover}
+.sbu-info{flex:1;min-width:0}
+.sbu-name{font-size:14px;font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sbu-badge{font-size:10px;color:var(--text3);display:block;margin-top:1px}
+.sbu-btn{width:32px;height:32px;border-radius:8px;border:none;background:transparent;color:var(--text3);font-size:16px;cursor:pointer;transition:all .15s var(--ease);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
+.sbu-btn:hover{background:var(--surface);color:var(--text);transform:translateY(-1px)}
 
 /* DROPDOWN */
 .dd{display:none;position:absolute;top:100%;right:0;margin-top:6px;background:rgba(15,20,32,.92);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border:1px solid rgba(29,107,240,.12);border-radius:var(--rl);padding:4px;min-width:200px;box-shadow:var(--shadow-l),0 0 60px rgba(29,107,240,.04);z-index:100;animation:sIn .2s var(--ease-o);transform-origin:top right}
@@ -330,13 +326,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 /* MOBILE */
 @media(max-width:768px){
   .sb{position:fixed;top:0;left:0;bottom:0;z-index:20;width:300px;transform:translateX(-100%);transition:transform .3s var(--ease);border-right-color:rgba(29,107,240,.12);box-shadow:4px 0 40px rgba(0,0,0,.3)}.sb.on{transform:translateX(0)}
-  .lbar{width:100%;height:52px;flex-direction:row;padding:0 8px;border-right:none;border-bottom:1px solid var(--border);gap:0;position:relative;z-index:11}
-  .lb-user{width:36px;height:36px;border-radius:10px;font-size:14px;margin-bottom:0;flex-shrink:0}
-  .lb-div{width:1px;height:24px;margin:0 4px}
-  .lb-sp{display:none}
-  .lbb{width:38px;height:38px;border-radius:8px;font-size:16px;margin:0}
-  .lbb.on{background:var(--prim-l);color:var(--prim)}
-  .lb-badge{bottom:-2px;right:-2px;font-size:7px;padding:1px 3px;min-width:12px}
+  .sbu{padding:8px 10px}
+  .sbu-av{width:32px;height:32px;font-size:12px}
+  .sbu-name{font-size:13px}
+  .sbu-badge{font-size:9px}
   .auth-c{padding:28px 18px 24px;width:94vw}.auth-logo .lg{font-size:32px}
   .tabs button{padding:9px 6px;font-size:12px}
   .frm input{padding:11px 12px;font-size:13px}
@@ -402,28 +395,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 <div class="app" id="app">
 <div class="sbo" id="sbo"></div>
   <div class="bd">
-    <div class="lbar" id="lbar">
-      <div class="lb-user" id="userTrig">
-        <span class="lb-av" id="hdrAv">?</span>
-        <span class="lb-un" id="hdrUser"></span>
-        <span class="lb-badge" id="onlineBadge">0</span>
-      </div>
-      <div class="lb-div"></div>
-      <button class="lbb on" data-t="chats" title="Чаты">💬</button>
-      <button class="lbb" data-t="contacts" title="Контакты">👥</button>
-      <div class="lb-sp"></div>
-      <button class="lbb" onclick="oModal('settingsModal')" title="Настройки">⚙️</button>
-      <button class="lbb" onclick="logout()" title="Выйти">🚪</button>
-      <div class="dd" id="userMenu">
-        <button class="di" data-a="profile"><span class="ic">👤</span> Профиль</button>
-        <button class="di" data-a="settings"><span class="ic">⚙️</span> Настройки</button>
-        <button class="di" data-a="newchat"><span class="ic">✉️</span> Новый чат</button>
-        <button class="di" data-a="newgroup"><span class="ic">👥</span> Создать группу</button>
-        <div class="dv"></div>
-        <button class="di" data-a="logout"><span class="ic">🚪</span> Выйти</button>
-      </div>
-    </div>
     <aside class="sb" id="sb">
+      <div class="sbu">
+        <div class="sbu-main" id="userTrig">
+          <span class="sbu-av" id="hdrAv">?</span>
+          <div class="sbu-info">
+            <span class="sbu-name" id="hdrUser"></span>
+            <span class="sbu-badge" id="onlineBadge">0 онлайн</span>
+          </div>
+        </div>
+        <div style="position:relative">
+          <button class="sbu-btn" id="sbuSettings" title="Настройки">⚙️</button>
+          <div class="dd" id="userMenu">
+            <button class="di" data-a="profile"><span class="ic">👤</span> Профиль</button>
+            <button class="di" data-a="settings"><span class="ic">⚙️</span> Настройки</button>
+            <button class="di" data-a="newchat"><span class="ic">✉️</span> Новый чат</button>
+            <button class="di" data-a="newgroup"><span class="ic">👥</span> Создать группу</button>
+            <div class="dv"></div>
+            <button class="di" data-a="logout"><span class="ic">🚪</span> Выйти</button>
+          </div>
+        </div>
+      </div>
       <div class="sbh">
         <div class="srch">
           <span class="si">🔍</span>
@@ -1479,7 +1471,7 @@ window.addEventListener('blur',()=>{pageFocused=false});
 sbo.addEventListener('click',()=>{sb.classList.remove('on');sbo.classList.remove('on')});
 bb.addEventListener('click',()=>{if(window.innerWidth<=768){sb.classList.add('on');sbo.classList.add('on');bb.classList.remove('sh')}});
 function closeSb(){sb.classList.remove('on');sbo.classList.remove('on')}
-function upOnline(){onlineBadge.textContent=allUsers.filter(u=>u.online).length}
+function upOnline(){const n=allUsers.filter(u=>u.online).length;onlineBadge.textContent=n+' онлайн'}
 // ============ CALLS ============
 function callUser(target,video){
   if(callState)return;
