@@ -67,6 +67,28 @@ const MIME = {
 };
 
 const server = http.createServer((req, res) => {
+  if (req.url === '/admin/keys' && req.method === 'GET') {
+    const list = (premiumKeys.keys || []).map(k => ({
+      code: k.code, used: k.used, usedBy: k.usedBy || null,
+      usedAt: k.usedAt || null,
+    }));
+    const active = list.filter(k => !k.used);
+    const used = list.filter(k => k.used);
+    let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Poins Keys</title>
+<style>body{font-family:monospace;background:#0b0e17;color:#e8edf3;padding:40px;max-width:600px;margin:0 auto}
+h1{color:#1d6bf0}.key{background:#141d2b;padding:10px 16px;border-radius:8px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,.06)}
+.key .c{font-size:16px;letter-spacing:2px;font-weight:600}.key .s{font-size:11px;color:#4a5a6e}
+.used{opacity:.4;text-decoration:line-through}.badge{font-size:10px;padding:3px 8px;border-radius:4px}
+.badge-ok{background:#2ecc71;color:#fff}.badge-used{background:#e74c4c;color:#fff}
+h2{color:#8a98aa;font-size:14px;margin-top:24px;text-transform:uppercase;letter-spacing:1px}</style></head><body>
+<h1>🔑 Poins Premium Keys</h1>
+<h2>Available (${active.length})</h2>${active.map(k=>`<div class="key"><span class="c">${k.code}</span><span class="badge badge-ok">FREE</span></div>`).join('')}
+<h2>Used (${used.length})</h2>${used.map(k=>`<div class="key used"><span class="c">${k.code}</span><span class="s">→ ${k.usedBy} (${k.usedAt})</span></div>`).join('')}
+</body></html>`;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+    return;
+  }
   let filePath = path.join(PUBLIC_DIR, req.url === '/' ? 'index.html' : req.url);
   const ext = path.extname(filePath);
   fs.readFile(filePath, (err, data) => {
@@ -578,6 +600,14 @@ wss.on('connection', (ws) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
+  const avail = (premiumKeys.keys || []).filter(k => !k.used);
   console.log(`\n  ✦ Poins Messenger запущен на порту ${PORT}`);
   console.log(`  http://localhost:${PORT}`);
+  console.log(`  🔑 Свободных ключей: ${avail.length}`);
+  if (avail.length) {
+    console.log(`  ─── Первые 3 ключа ───`);
+    avail.slice(0, 3).forEach(k => console.log(`  ${k.code}`));
+    console.log(`  ─────────────────────`);
+    console.log(`  📋 Все ключи: http://localhost:${PORT}/admin/keys`);
+  }
 });
