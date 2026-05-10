@@ -20,10 +20,16 @@
   --ease:cubic-bezier(.4,0,.2,1); --ease-o:cubic-bezier(0,0,.2,1);
   --sw:340px;
 }
-/* THEMES */
-body[data-theme="light"]{--bg:#f0f2f5;--bg-s:#e8eaed;--bg-c:#fff;--surface:#fff;--surface-h:#f0f2f5;--surface-a:#e4e6e9;--text:#1c1e21;--text2:#5f6368;--text3:#9aa0a6;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.04);--shadow:0 4px 24px rgba(0,0,0,.12);--shadow-l:0 16px 56px rgba(0,0,0,.18)}
-body[data-theme="green"]{--bg:#0a140e;--bg-s:#0d1a12;--bg-c:#0f1f14;--surface:#142618;--surface-h:#1a3220;--surface-a:#1f3d28;--prim:#2ecc71;--prim-h:#3ddc84;--prim-grad:linear-gradient(135deg,#2ecc71,#3ddc84);--prim-l:rgba(46,204,113,.12);--prim-g:rgba(46,204,113,.25);--text:#e8edf3;--text2:#8a98aa;--text3:#4a5a6e;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.03)}
-body[data-theme="pink"]{--bg:#170b11;--bg-s:#1c0e15;--bg-c:#211019;--surface:#2b1420;--surface-h:#351a29;--surface-a:#402033;--prim:#e74c7a;--prim-h:#f05a88;--prim-grad:linear-gradient(135deg,#e74c7a,#f05a88);--prim-l:rgba(231,76,122,.12);--prim-g:rgba(231,76,122,.25);--text:#e8edf3;--text2:#8a98aa;--text3:#4a5a6e;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.03)}
+/* THEMES - 7 aesthetic dark themes */
+body{transition:background .4s ease,color .4s ease}
+body *{transition:background .3s ease,border-color .3s ease,color .3s ease,box-shadow .3s ease}
+body[data-theme="midnight"]{--bg:#080c18;--bg-s:#0c1020;--bg-c:#101428;--surface:#151d35;--surface-h:#1c2545;--surface-a:#232e55;--prim:#4f7bff;--prim-h:#5f8bff;--prim-grad:linear-gradient(135deg,#4f7bff,#7b5fff);--prim-l:rgba(79,123,255,.12);--prim-g:rgba(79,123,255,.25);--text:#e8edf3;--text2:#8895b0;--text3:#4a5a7a;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.03)}
+body[data-theme="sakura"]{--bg:#1a0e14;--bg-s:#201218;--bg-c:#26161e;--surface:#331a26;--surface-h:#402032;--surface-a:#4d263e;--prim:#ff6b9d;--prim-h:#ff7dab;--prim-grad:linear-gradient(135deg,#ff6b9d,#ff9a76);--prim-l:rgba(255,107,157,.12);--prim-g:rgba(255,107,157,.25);--text:#f0e4ea;--text2:#b894a5;--text3:#7a4a5e;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.03)}
+body[data-theme="forest"]{--bg:#0a120c;--bg-s:#0e1810;--bg-c:#121e14;--surface:#172618;--surface-h:#1e3220;--surface-a:#253d28;--prim:#3ddc84;--prim-h:#4ee894;--prim-grad:linear-gradient(135deg,#3ddc84,#2ecc71);--prim-l:rgba(61,220,132,.12);--prim-g:rgba(61,220,132,.25);--text:#e8f0ea;--text2:#8aaa94;--text3:#4a6a54;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.03)}
+body[data-theme="ocean"]{--bg:#0a0e18;--bg-s:#0e1420;--bg-c:#121a28;--surface:#182235;--surface-h:#1e2c45;--surface-a:#243655;--prim:#00bcd4;--prim-h:#00d4e6;--prim-grad:linear-gradient(135deg,#00bcd4,#0097a7);--prim-l:rgba(0,188,212,.12);--prim-g:rgba(0,188,212,.25);--text:#e0ecf0;--text2:#8aaab4;--text3:#4a6a78;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.03)}
+body[data-theme="sunset"]{--bg:#180a0e;--bg-s:#1e0e12;--bg-c:#241216;--surface:#301a20;--surface-h:#3c222a;--surface-a:#482a34;--prim:#ff7b3a;--prim-h:#ff8f4a;--prim-grad:linear-gradient(135deg,#ff7b3a,#e74c7a);--prim-l:rgba(255,123,58,.12);--prim-g:rgba(255,123,58,.25);--text:#f0e4e0;--text2:#b89488;--text3:#7a4a3e;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.03)}
+body[data-theme="cyberpunk"]{--bg:#080812;--bg-s:#0c0c1a;--bg-c:#101022;--surface:#18183a;--surface-h:#20204a;--surface-a:#28285a;--prim:#ff2d75;--prim-h:#ff4080;--prim-grad:linear-gradient(135deg,#ff2d75,#7b2dff);--prim-l:rgba(255,45,117,.12);--prim-g:rgba(255,45,117,.25);--text:#e8e4f0;--text2:#9894b8;--text3:#58547a;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.03)}
+body[data-theme="nord"]{--bg:#0b0e14;--bg-s:#0f121a;--bg-c:#131620;--surface:#1b1f2e;--surface-h:#23283a;--surface-a:#2b3046;--prim:#88c0d0;--prim-h:#98d0e0;--prim-grad:linear-gradient(135deg,#88c0d0,#5e81ac);--prim-l:rgba(136,192,208,.12);--prim-g:rgba(136,192,208,.25);--text:#e8ecf0;--text2:#8a96a8;--text3:#4a5668;--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.03)}
 .premium-badge{display:inline-flex;align-items:center;gap:2px;font-size:11px;background:linear-gradient(135deg,#ffd700,#ffb300);color:#1a1a2e;padding:0 6px;border-radius:8px;font-weight:700;margin-left:4px;vertical-align:middle}
 .emoji-status{font-size:14px;margin-left:4px;vertical-align:middle}
 .cname{display:flex;align-items:center;gap:2px}
@@ -43,6 +49,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 @keyframes modIn{from{opacity:0;transform:scale(.95)translateY(8px)}to{opacity:1;transform:scale(1)translateY(0)}}
 @keyframes callPulse{0%,100%{box-shadow:0 0 0 0 rgba(29,107,240,.4)}50%{box-shadow:0 0 0 20px rgba(29,107,240,0)}}
 @keyframes ripple{to{transform:scale(4);opacity:0}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+.ripple{position:relative;overflow:hidden}
+.ripple::after{content:'';position:absolute;border-radius:50%;background:rgba(255,255,255,.3);transform:scale(0);animation:ripple .6s ease-out;pointer-events:none}
 
 /* ===== AUTH ===== */
 .auth{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 0%,#0f1a30 0%,var(--bg) 60%,#050810 100%)}
@@ -636,7 +645,12 @@ function connect(){
         applyTheme(myProfile&&myProfile.theme);
         applyChatBg(myProfile&&myProfile.bgImage);
         break;
-      case 'error':authErr.textContent=d.message;break;
+      case 'error':
+        authErr.textContent=d.message;
+        // Show premium errors in the modal too
+        const prEl=$('premKeyResult');
+        if(prEl&&d.message&&d.message.includes('ключ'))prEl.textContent='❌ '+d.message;
+        break;
 
       // USERS / PROFILE
       case 'users_list':allUsers=d.users;renderContacts();break;
@@ -682,7 +696,7 @@ function connect(){
       case 'reaction':if(d.name!==userName)addR(d.msgId,d.reaction);break;
 
       // PREMIUM
-      case 'premium_activated':isPremium=true;premUntil=d.until;notif('⭐ Premium активирован!');openPremium();break;
+      case 'premium_activated':isPremium=true;premUntil=d.until;notif('⭐ Premium активирован!');const pr=$('premKeyResult');if(pr)pr.textContent='✅ Premium активирован!';openPremium();break;
       case 'theme_set':applyTheme(d.theme);break;
       case 'bg_set':notif('✅ Фон чата обновлён');break;
       case 'name_color_set':notif('✅ Цвет ника обновлён');break;
@@ -1043,6 +1057,19 @@ function sendSticker(i){
   wsSend(p);sp.style.display='none';
 }
 
+// RIPPLE EFFECT
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('button,.mb,.btn-p,.di,.st-row,.gmi,.ci');
+  if(!btn)return;
+  const ripple=document.createElement('span');
+  const rect=btn.getBoundingClientRect();
+  const size=Math.max(rect.width,rect.height);
+  ripple.style.cssText=`position:absolute;border-radius:50%;background:rgba(255,255,255,.2);width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px;transform:scale(0);animation:ripple .6s ease-out;pointer-events:none`;
+  btn.style.position=btn.style.position||'relative';btn.style.overflow='hidden';
+  btn.appendChild(ripple);
+  setTimeout(()=>ripple.remove(),600);
+});
+
 // NOTIFICATIONS
 function playNot(){try{const c=new(window.AudioContext||window.webkitAudioContext),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=600;g.gain.value=.06;o.start();o.stop(c.currentTime+.1)}catch{}}
 function notif(t){const d=document.createElement('div');d.className='not';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
@@ -1069,33 +1096,52 @@ function saveProf(){
 // PREMIUM
 function openPremium(){
   const p=myProfile||{};
+  const curTheme=p.theme||'midnight';
   $('premContent').innerHTML=`
-    <div class="ir"><span>Статус</span><span>${isPremium?'⭐ Premium активен':'🆓 Бесплатно'}</span></div>
-    ${isPremium&&premUntil?`<div class="ir"><span>Действует до</span><span style="color:var(--text2)">${new Date(premUntil).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</span></div>`:''}
-    ${isPremium?'':`<button class="mb" onclick="activatePremium()">⭐ Активировать Premium</button>`}
-    <label>Эмодзи-статус</label>
+    <div class="ir" style="padding:8px 0"><span>Статус</span><span style="font-weight:600">${isPremium?'⭐ Premium активен':'🆓 Бесплатно'}</span></div>
+    ${isPremium&&premUntil?`<div class="ir" style="padding:8px 0"><span>Действует до</span><span style="color:var(--text2)">${new Date(premUntil).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</span></div>`:''}
+    <div style="background:var(--surface);border-radius:var(--r);padding:12px;margin:8px 0">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:6px">${isPremium?'🔑 Ввести другой ключ':'🔑 Введите ключ Premium'}</div>
+      <div style="display:flex;gap:6px">
+        <input id="premKeyInput" placeholder="XXXXXXXXXXXX" style="flex:1;font-family:monospace;letter-spacing:1px" maxlength="20">
+        <button class="mb" style="width:auto;padding:11px 16px;margin-top:0;font-size:12px" onclick="activatePremium()">⭐ Активировать</button>
+      </div>
+      <div id="premKeyResult" style="font-size:11px;color:var(--text3);margin-top:4px;min-height:16px"></div>
+    </div>
+    <label>😎 Эмодзи-статус</label>
     <div style="display:flex;gap:6px;margin-top:4px">
       <input id="emojiStatusInput" placeholder="😎" maxlength="4" value="${esc(p.emojiStatus||'')}" style="flex:1">
-      <button class="mb s" style="width:auto;padding:11px 16px;margin-top:0" onclick="setEmojiStatus()">Сохранить</button>
+      <button class="mb" style="width:auto;padding:11px 16px;margin-top:0;font-size:12px;background:var(--prim-grad);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-weight:600" onclick="setEmojiStatus()">OK</button>
     </div>
-    <label>Тема оформления</label>
-    <div class="st-grid">
-      <label class="${((p.theme||'dark')==='dark'?'on':'')}" onclick="setTheme('dark')"><input type="radio" name="theme" ${((p.theme||'dark')==='dark'?'checked':'')}><div class="theme-preview" style="background:#0b0e17;color:#fff">🌙</div>Тёмная</label>
-      <label class="${(p.theme==='light'?'on':'')}" onclick="setTheme('light')"><input type="radio" name="theme" ${(p.theme==='light'?'checked':'')}><div class="theme-preview" style="background:#f0f2f5;color:#333">☀️</div>Светлая</label>
-      <label class="${(p.theme==='green'?'on':'')}" onclick="setTheme('green')"><input type="radio" name="theme" ${(p.theme==='green'?'checked':'')}><div class="theme-preview" style="background:#0a140e;color:#2ecc71;font-size:12px">🌿</div>Зелёная</label>
-      <label class="${(p.theme==='pink'?'on':'')}" onclick="setTheme('pink')"><input type="radio" name="theme" ${(p.theme==='pink'?'checked':'')}><div class="theme-preview" style="background:#170b11;color:#e74c7a">🌸</div>Розовая</label>
+    <label>🎨 Тема оформления</label>
+    <div class="st-grid" style="margin-top:6px">
+      ${[
+        {id:'midnight',icon:'🌙',label:'Midnight'},
+        {id:'sakura',icon:'🌸',label:'Сакура'},
+        {id:'forest',icon:'🌿',label:'Forest'},
+        {id:'ocean',icon:'🌊',label:'Ocean'},
+        {id:'sunset',icon:'🌅',label:'Sunset'},
+        {id:'cyberpunk',icon:'💜',label:'Cyber'},
+        {id:'nord',icon:'❄️',label:'Nord'},
+      ].map(t=>`<label class="${curTheme===t.id?'on':''}" onclick="setTheme('${t.id}')" style="cursor:pointer;flex-direction:row;padding:6px 10px;min-width:auto"><div class="theme-preview" style="width:auto;height:auto;background:none;font-size:16px;min-width:20px">${t.icon}</div><span>${t.label}</span></label>`).join('')}
     </div>
-    <label>Цвет ника в чате</label>
-    <div style="display:flex;gap:6px;margin-top:4px">
-      <input type="color" id="nameColorInput" value="${p.nameColor||'#ffffff'}" style="width:46px;height:40px;padding:2px;cursor:pointer">
-      <button class="mb s" style="width:auto;padding:11px 16px;margin-top:0" onclick="setNameColor()">Применить</button>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">
+      <div style="flex:1;min-width:120px">
+        <label style="font-size:10px;color:var(--text3);margin-bottom:2px;display:block">🎨 Цвет ника</label>
+        <div style="display:flex;gap:4px">
+          <input type="color" id="nameColorInput" value="${p.nameColor||'#ffffff'}" style="width:40px;height:34px;padding:2px;cursor:pointer;border-radius:6px">
+          <button class="mb" style="width:auto;padding:8px 12px;margin-top:0;font-size:11px" onclick="setNameColor()">OK</button>
+        </div>
+      </div>
+      <div style="flex:1;min-width:120px">
+        <label style="font-size:10px;color:var(--text3);margin-bottom:2px;display:block">🖼️ Фон чата</label>
+        <div style="display:flex;gap:4px">
+          <input type="file" id="bgInput" accept="image/*" style="flex:1;font-size:10px;padding:4px">
+          <button class="mb" style="width:auto;padding:8px 12px;margin-top:0;font-size:11px" onclick="setChatBg()">Загр</button>
+          <button class="mb" style="width:auto;padding:8px 12px;margin-top:0;font-size:11px;background:var(--surface);color:var(--text);border:1px solid var(--border)" onclick="resetChatBg()">✕</button>
+        </div>
+      </div>
     </div>
-    <label>Фон чата</label>
-    <div style="display:flex;gap:6px;margin-top:4px">
-      <input type="file" id="bgInput" accept="image/*" style="flex:1">
-      <button class="mb s" style="width:auto;padding:11px 16px;margin-top:0" onclick="setChatBg()">Загрузить</button>
-    </div>
-    <button class="mb s" onclick="resetChatBg()" style="margin-top:4px">🔄 Сбросить фон</button>
   `;
   oModal('premiumModal');
   // Attach file handler
@@ -1105,8 +1151,11 @@ function openPremium(){
 }
 
 function activatePremium(){
-  const code=prompt('Введите код Premium:');
-  if(code&&code.trim())wsSend({type:'premium_activate',code:code.trim()});
+  const code=$('premKeyInput').value.trim();
+  const r=$('premKeyResult');
+  if(!code){r.textContent='Введите ключ';return}
+  r.textContent='⏳ Активируем...';
+  wsSend({type:'premium_activate',code});
 }
 
 function setEmojiStatus(){
@@ -1117,7 +1166,7 @@ function setEmojiStatus(){
 function setTheme(t){
   wsSend({type:'set_theme',theme:t});
   applyTheme(t);
-  document.querySelectorAll('#premContent .st-grid label').forEach(l=>l.classList.toggle('on',l.querySelector('input')&&l.querySelector('input').value===t));
+  $('premContent').querySelectorAll('.st-grid label').forEach(l=>l.classList.toggle('on',l.getAttribute('onclick')===`setTheme('${t}')`));
 }
 
 function applyTheme(t){
