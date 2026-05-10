@@ -516,7 +516,7 @@ let typing={},typingT,replyTo;
 
 // Call state
 let callState=null; // ring, outgoing, active
-let callTarget=null,callVideo=false,callMuted=false,callSpeaker=false;
+let callTarget=null,isVideoCall=false,callMuted=false,callSpeaker=false;
 let pc=null,localStream=null,camStream=null,screenStream=null;
 
 const auth=$('auth'),app=$('app'),msgs=$('msgs'),msgIn=$('msgIn'),snd=$('snd');
@@ -635,7 +635,7 @@ function connect(){
 
       // CALLS
       case 'incoming_call':
-        callTarget=d.from;callVideo=d.video;
+        callTarget=d.from;isVideoCall=d.video;
         showIncomingCall(d.from,d.video);
         break;
       case 'call_ringing':
@@ -1024,7 +1024,7 @@ window.addEventListener('resize',updateMobileUI);
 // ============ CALLS ============
 function callUser(target,video){
   if(callState)return;
-  callTarget=target;callVideo=video;callState='outgoing';
+  callTarget=target;isVideoCall=video;callState='outgoing';
   const u=allUsers.find(x=>x.name===target);
   callName.textContent=target;
   const avHtml=u&&u.avatar?`<img src="${u.avatar}" alt="">`:target[0].toUpperCase();
@@ -1047,7 +1047,7 @@ function callUser(target,video){
 }
 
 function showIncomingCall(from,video){
-  callTarget=from;callVideo=video;callState='ringing';
+  callTarget=from;isVideoCall=video;callState='ringing';
   const u=allUsers.find(x=>x.name===from);
   callName.textContent=from;
   const avHtml=u&&u.avatar?`<img src="${u.avatar}" alt="">`:from[0].toUpperCase();
@@ -1074,7 +1074,7 @@ function acceptCall(){
     <button class="cb-mid" onclick="toggleSpeaker()">🔊</button>
   `;
   
-  if(callVideo){
+  if(isVideoCall){
     callOverlay.className='call-o on call-vid';
     callVideo.style.display='block';callVidBtns.style.display='flex';
     document.querySelectorAll('.call-av')[0].style.display='none';
@@ -1132,7 +1132,7 @@ function setupCallPeer(target,isCaller){
     if(e.streams[0]){
       callVideo.srcObject=e.streams[0];
       callVideo.style.display='block';
-      if(callVideo)callOverlay.className='call-o on call-vid';
+      if(isVideoCall)callOverlay.className='call-o on call-vid';
       document.querySelectorAll('.call-av')[0].style.display='none';
     }
   };
