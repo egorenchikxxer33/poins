@@ -39,6 +39,9 @@ const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
 };
 
 const server = http.createServer((req, res) => {
@@ -63,11 +66,21 @@ function send(ws, data) {
   if (ws.readyState === 1) ws.send(JSON.stringify(data));
 }
 
-function onlineList() {
-  return Array.from(sessions.values()).map(s => ({
-    name: s.name,
-    color: (users[s.name] || {}).color || '#1d6bf0',
+function buildUserList() {
+  return Object.keys(users).map(n => ({
+    name: n, color: users[n].color || '#1d6bf0',
+    online: Array.from(sessions.values()).some(s => s.name === n),
+    avatar: users[n].avatar || '',
+    bio: users[n].bio || '',
   }));
+}
+
+function getConvForUser(convId, username) {
+  const c = conversations[convId];
+  if (!c) return null;
+  if (c.type === 'dm' && !c.participants.includes(username)) return null;
+  if (c.type === 'group' && !c.members.includes(username)) return null;
+  return c;
 }
 
 wss.on('connection', (ws) => {
@@ -80,13 +93,13 @@ wss.on('connection', (ws) => {
 
     switch (data.type) {
 
-      // ---- AUTH ----
+      // ============ AUTH ============
       case 'register': {
         const { username, password } = data;
         if (!username || !password || username.length < 2 || password.length < 3) {
           send(ws, { type: 'error', message: 'Имя от 2 символов, пароль от 3' }); return;
         }
-        if (users[username]) { send(ws, { type: 'error', message: 'Имя уже занято' }); return; }
+        if (users[username]) { send(ws, { type: 'error', message: 'Имя занято' }); return; }
         users[username] = {
           password: hash(password), role: 'user',
           bio: '', color: '#1d6bf0', avatar: '',
@@ -108,45 +121,36 @@ wss.on('connection', (ws) => {
         session = { name: username };
         sessions.set(ws, session);
 
-        const allUsers = Object.keys(users).map(n => ({
-          name: n, color: users[n].color || '#1d6bf0',
-          online: Array.from(sessions.values()).some(s => s.name === n),
-          lastSeen: users[n].lastSeen || 0,
-        }));
-
         send(ws, {
           type: 'login_ok', user: username,
-          users: allUsers, online: sessions.size,
-          profile: { name: username, ...u, password: undefined },
+          users: buildUserList(), online: sessions.size,
+          profile: { name: username, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '' },
         });
-        broadcast({ type: 'user_online', name: username, users: onlineList(), online: sessions.size }, ws);
+        broadcast({ type: 'user_online', name: username, users: buildUserList(), online: sessions.size }, ws);
         break;
       }
 
-      // ---- PROFILE ----
+      // ============ PROFILE ============
       case 'profile_update': {
         if (!session) return;
         const u = users[session.name];
         if (!u) return;
         if (data.bio !== undefined) u.bio = data.bio.slice(0, 200);
         if (data.color !== undefined) u.color = data.color;
+        if (data.avatar !== undefined) u.avatar = data.avatar;
         saveUsers();
-        broadcast({ type: 'profile_updated', name: session.name, color: u.color, bio: u.bio });
+        broadcast({ type: 'profile_updated', name: session.name, profile: { name: session.name, bio: u.bio || '', color: u.color || '#1d6bf0', avatar: u.avatar || '' } });
         break;
       }
 
-      // ---- USERS ----
+      // ============ USERS ============
       case 'get_users': {
         if (!session) return;
-        const all = Object.keys(users).map(n => ({
-          name: n, color: users[n].color || '#1d6bf0',
-          online: Array.from(sessions.values()).some(s => s.name === n),
-        }));
-        send(ws, { type: 'users_list', users: all });
+        send(ws, { type: 'users_list', users: buildUserList() });
         break;
       }
 
-      // ---- CONVERSATIONS (DM) ----
+      // ============ CONVERSATIONS ============
       case 'start_dm': {
         if (!session) return;
         const target = (data.target || '').trim();
@@ -155,9 +159,7 @@ wss.on('connection', (ws) => {
         const convId = [session.name, target].sort().join('::');
         if (!conversations[convId]) {
           conversations[convId] = {
-            id: convId, type: 'dm',
-            participants: [session.name, target],
-            created: Date.now(),
+            id: convId, type: 'dm', participants: [session.name, target], created: Date.now(),
           };
           saveConvs();
         }
@@ -165,21 +167,89 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      case 'create_group': {
+        if (!session) return;
+        const name = (data.name || '').trim().slice(0, 30);
+        if (!name) { send(ws, { type: 'error', message: 'Введите название группы' }); return; }
+        const members = data.members || [];
+        if (!members.includes(session.name)) members.unshift(session.name);
+        if (members.length < 2) { send(ws, { type: 'error', message: 'Нужно минимум 2 участника' }); return; }
+        const convId = 'g_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+        conversations[convId] = {
+          id: convId, type: 'group', name, members, creator: session.name, created: Date.now(),
+        };
+        saveConvs();
+        // System message
+        const sysMsg = { id: 'sys_' + Date.now(), from: 'system', text: `Группа "${name}" создана`, time: new Date().toISOString(), convId, system: true };
+        if (!messages[convId]) messages[convId] = [];
+        messages[convId].push(sysMsg);
+        saveMsgs();
+        // Notify all members
+        for (const [client, s] of sessions) {
+          if (members.includes(s.name) && client.readyState === 1) {
+            send(client, { type: 'group_created', conversation: conversations[convId] });
+          }
+        }
+        break;
+      }
+
+      case 'add_to_group': {
+        if (!session) return;
+        const convId = data.convId;
+        const conv = conversations[convId];
+        if (!conv || conv.type !== 'group') { send(ws, { type: 'error', message: 'Группа не найдена' }); return; }
+        if (!conv.members.includes(session.name)) { send(ws, { type: 'error', message: 'Вы не в группе' }); return; }
+        const target = (data.target || '').trim();
+        if (!target || !users[target]) { send(ws, { type: 'error', message: 'Пользователь не найден' }); return; }
+        if (conv.members.includes(target)) { send(ws, { type: 'error', message: 'Уже в группе' }); return; }
+        conv.members.push(target);
+        saveConvs();
+        const sysMsg = { id: 'sys_' + Date.now(), from: 'system', text: `${session.name} добавил(а) ${target}`, time: new Date().toISOString(), convId, system: true };
+        if (!messages[convId]) messages[convId] = [];
+        messages[convId].push(sysMsg);
+        saveMsgs();
+        for (const [client, s] of sessions) {
+          if (conv.members.includes(s.name) && client.readyState === 1) {
+            send(client, { type: 'group_updated', conversation: conv });
+            send(client, { type: 'new_msg', message: sysMsg });
+          }
+        }
+        break;
+      }
+
       case 'get_convs': {
         if (!session) return;
-        const myConvs = Object.values(conversations).filter(c => c.participants.includes(session.name));
+        const myConvs = Object.values(conversations).filter(c => {
+          if (c.type === 'dm' && c.participants.includes(session.name)) return true;
+          if (c.type === 'group' && c.members.includes(session.name)) return true;
+          return false;
+        });
         send(ws, { type: 'convs_list', conversations: myConvs });
         break;
       }
 
-      // ---- MESSAGES ----
+      case 'get_conv_info': {
+        if (!session) return;
+        const conv = getConvForUser(data.convId, session.name);
+        if (!conv) { send(ws, { type: 'error', message: 'Нет доступа' }); return; }
+        if (conv.type === 'group') {
+          const membersInfo = conv.members.map(n => ({
+            name: n, ...(users[n] ? { color: users[n].color, avatar: users[n].avatar, bio: users[n].bio, online: Array.from(sessions.values()).some(s => s.name === n) } : {}),
+          }));
+          send(ws, { type: 'conv_info', conversation: conv, members: membersInfo });
+        } else {
+          send(ws, { type: 'conv_info', conversation: conv });
+        }
+        break;
+      }
+
+      // ============ MESSAGES ============
       case 'get_messages': {
         if (!session) return;
         const convId = data.convId;
         if (!convId) return;
-        const conv = conversations[convId];
-        if (!conv || !conv.participants.includes(session.name)) return;
-        const msgs = (messages[convId] || []).slice(-100);
+        if (!getConvForUser(convId, session.name)) return;
+        const msgs = (messages[convId] || []).slice(-200);
         send(ws, { type: 'msgs_list', convId, messages: msgs });
         break;
       }
@@ -189,45 +259,109 @@ wss.on('connection', (ws) => {
         const text = (data.text || '').trim();
         if (!text) return;
 
+        const msg = {
+          id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          from: session.name, text, time: new Date().toISOString(),
+        };
+
         if (data.convId) {
-          // DM
-          const conv = conversations[data.convId];
-          if (!conv || !conv.participants.includes(session.name)) return;
-          const msg = {
-            id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-            from: session.name, text, time: new Date().toISOString(), convId: data.convId,
-          };
+          const conv = getConvForUser(data.convId, session.name);
+          if (!conv) return;
+          msg.convId = data.convId;
           if (!messages[data.convId]) messages[data.convId] = [];
           messages[data.convId].push(msg);
           if (messages[data.convId].length > 200) messages[data.convId] = messages[data.convId].slice(-200);
           saveMsgs();
+          const targets = conv.type === 'dm' ? conv.participants : conv.members;
           for (const [client, s] of sessions) {
-            if (conv.participants.includes(s.name) && client.readyState === 1) {
+            if (targets.includes(s.name) && client.readyState === 1) {
               send(client, { type: 'new_msg', message: msg });
             }
           }
         } else {
-          // Main chat
-          const msg = {
-            id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-            from: session.name, text, time: new Date().toISOString(),
-          };
           broadcast({ type: 'new_msg', message: msg });
         }
         break;
       }
 
-      // ---- TYPING ----
+      // ============ TYPING ============
       case 'typing': {
         if (!session) return;
         broadcast({ type: 'typing', name: session.name, convId: data.convId }, ws);
         break;
       }
 
-      // ---- REACTIONS ----
+      // ============ REACTIONS ============
       case 'reaction': {
         if (!session) return;
         broadcast({ type: 'reaction', name: session.name, msgId: data.msgId, reaction: data.reaction, convId: data.convId });
+        break;
+      }
+
+      // ============ CALLS (WebRTC) ============
+      case 'call_user': {
+        if (!session) return;
+        const target = (data.target || '').trim();
+        if (!target || !users[target]) return;
+        const callerName = session.name;
+        // Forward call to target
+        for (const [client, s] of sessions) {
+          if (s.name === target && client.readyState === 1) {
+            send(client, { type: 'incoming_call', from: callerName, video: !!data.video });
+            send(ws, { type: 'call_ringing', target });
+            return;
+          }
+        }
+        send(ws, { type: 'error', message: 'Пользователь не в сети' });
+        break;
+      }
+
+      case 'call_accept': {
+        if (!session) return;
+        const target = (data.target || '').trim();
+        for (const [client, s] of sessions) {
+          if (s.name === target && client.readyState === 1) {
+            send(client, { type: 'call_accepted', from: session.name });
+            break;
+          }
+        }
+        break;
+      }
+
+      case 'call_reject': {
+        if (!session) return;
+        const target = (data.target || '').trim();
+        for (const [client, s] of sessions) {
+          if (s.name === target && client.readyState === 1) {
+            send(client, { type: 'call_rejected', from: session.name });
+            break;
+          }
+        }
+        break;
+      }
+
+      case 'call_end': {
+        if (!session) return;
+        const target = (data.target || '').trim();
+        for (const [client, s] of sessions) {
+          if (s.name === target && client.readyState === 1) {
+            send(client, { type: 'call_ended', from: session.name });
+            break;
+          }
+        }
+        break;
+      }
+
+      case 'offer': case 'answer': case 'ice_candidate': {
+        if (!session) return;
+        const target = data.target;
+        if (!target) return;
+        for (const [client, s] of sessions) {
+          if (s.name === target && client.readyState === 1) {
+            send(client, { type: data.type, from: session.name, data: data.data });
+            break;
+          }
+        }
         break;
       }
     }
@@ -238,7 +372,7 @@ wss.on('connection', (ws) => {
       if (users[session.name]) users[session.name].lastSeen = Date.now();
       saveUsers();
       sessions.delete(ws);
-      broadcast({ type: 'user_offline', name: session.name, users: onlineList(), online: sessions.size });
+      broadcast({ type: 'user_offline', name: session.name, users: buildUserList(), online: sessions.size });
     }
   });
 });
